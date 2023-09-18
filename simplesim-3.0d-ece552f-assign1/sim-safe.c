@@ -42,7 +42,7 @@
  * copy of the written offer of source code.
  * 
  * 6. SimpleScalar was developed by Todd M. Austin, Ph.D. The tool suite is
- * currently maintained by SimpleScalar LLC (info@simplescalar.com). US Mail:
+ * c`urrently maintained by SimpleScalar LLC (info@simplescalar.com). US Mail:
  * 2395 Timbercrest Court, Ann Arbor, MI 48105.
  * 
  * Copyright (C) 1994-2003 by Todd M. Austin, Ph.D. and SimpleScalar, LLC.
@@ -65,11 +65,19 @@
 #include "stats.h"
 #include "sim.h"
 
-
+static counter_t sim_num_loads = 0;
 /* ECE552 Assignment 1 - STATS COUNTERS - BEGIN */
 static counter_t sim_num_RAW_hazard_q1;
 static counter_t sim_num_RAW_hazard_q2;
 /* ECE552 Assignment 1 - STATS COUNTERS - END */
+
+/* ECE552 Pre-Assignment - BEGIN CODE*/
+static counter_t reg_ready[MD_TOTAL_REGS];
+/* ECE552 Pre-Assignment - END CODE*/
+
+/* ECE552 Pre-Assignment - BEGIN CODE*/
+static counter_t sim_num_lduh = 0;
+/* ECE552 Pre-Assignment - END CODE*/
 
 /*
  * This file implements a functional simulator.  This functional simulator is
@@ -155,6 +163,23 @@ sim_reg_stats(struct stat_sdb_t *sdb)
 
   ld_reg_stats(sdb);
   mem_reg_stats(mem, sdb);
+
+  stat_reg_counter(sdb, "sim_num_loads",
+        "total number of load instructions",
+        &sim_num_loads, sim_num_loads, NULL);
+  
+  stat_reg_formula(sdb, "sim_load_ratio",
+        "load instruction fraction",
+        "sim_num_loads / sim_num_insn", NULL);
+
+/* ECE552 Pre-Assignment - BEGIN CODE*/
+  stat_reg_counter(sdb, "sim_num_lduh",
+                 "total number of load use hazards",
+                 &sim_num_lduh, sim_num_lduh, NULL);
+  stat_reg_formula(sdb, "sim_load_use_ratio",
+                 "load use fraction",
+                 "sim_num_lduh / sim_num_insn", NULL);
+/* ECE552 Pre-Assignment - END CODE*/
 }
 
 /* initialize the simulator */
@@ -312,7 +337,9 @@ sim_main(void)
   enum md_opcode op;
   register int is_write;
   enum md_fault_type fault;
-
+    /* ECE552 Pre-Assignment - BEGIN CODE*/
+    int r_out[2], r_in[3];
+/* ECE552 Pre-Assignment - END CODE*/
   fprintf(stderr, "sim: ** starting functional simulation **\n");
 
   /* set up initial default next PC */
@@ -353,7 +380,10 @@ sim_main(void)
 	{
 #define DEFINST(OP,MSK,NAME,OPFORM,RES,FLAGS,O1,O2,I1,I2,I3)		\
 	case OP:							\
-          SYMCAT(OP,_IMPL);						\
+          r_out[0] = (O1); r_out[1] = (O2); \
+          r_in[0] = (I1); r_in[1] = (I2); \
+          r_in[2] = (I3); \
+          SYMCAT(OP,_IMPL);	\
           break;
 #define DEFLINK(OP,MSK,NAME,MASK,SHIFT)					\
         case OP:							\
@@ -364,6 +394,34 @@ sim_main(void)
 #include "machine.def"
 	default:
 	  panic("attempted to execute a bogus opcode");
+
+          /* ECE552 Pre-Assignment - BEGIN CODE*/
+          {
+              int i;
+              for (i = 0; i < 3; i++) {
+                  if (r_in[i] != DNA && reg_ready [r_in [i]] > sim_num_insn) {
+                      if ((i == 0) && (MD_OP_FLAGS(op) & F_MEM) &&
+                          (MD_OP_FLAGS(op) & F_STORE)) {
+                          continue;
+                      }
+                      sim_num_lduh++;
+                      break;
+                  }
+              }
+          }
+              /* ECE552 Pre-Assignment - END CODE*/
+          /* ECE552 Pre-Assignment - BEGIN CODE*/
+              if ((MD_OP_FLAGS(op) & F_MEM) && (MD_OP_FLAGS(op) & F_LOAD)) {
+                  if (r_out[0] != DNA)
+                      reg_ready[r_out[0]] = sim_num_insn + 2;
+                  if (r_out[1] != DNA)
+                      reg_ready[r_out[1]] = sim_num_insn + 2;
+              }
+            /* ECE552 Pre-Assignment - END CODE*/
+
+      }
+      if ( (MD_OP_FLAGS(op) & F_MEM) && (MD_OP_FLAGS(op) & F_LOAD) ) {
+        sim_num_loads++;
       }
 
       if (fault != md_fault_none)

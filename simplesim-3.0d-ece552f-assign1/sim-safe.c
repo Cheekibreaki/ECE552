@@ -420,6 +420,7 @@ sim_main(void)
             /* ECE552 Pre-Assignment - END CODE*/
 
       }
+
       if ( (MD_OP_FLAGS(op) & F_MEM) && (MD_OP_FLAGS(op) & F_LOAD) ) {
         sim_num_loads++;
       }

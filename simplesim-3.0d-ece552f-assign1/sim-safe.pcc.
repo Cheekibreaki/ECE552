@@ -5210,11 +5210,7 @@ sim_main(void)
 
 
       regs.regs_R[MD_REG_ZERO] = 0;
-
-
-
-
-
+# 339 "sim-safe.c"
       { inst.a = ((( ((mem)->ptab[((((md_addr_t)((regs.regs_PC))) >> 12) & ((32*1024) - 1))] && (mem)->ptab[((((md_addr_t)((regs.regs_PC))) >> 12) & ((32*1024) - 1))]->tag == (((md_addr_t)((regs.regs_PC))) >> (12 + 15))) ? ( (mem)->ptab_accesses++, (mem)->ptab[((((md_addr_t)((regs.regs_PC))) >> 12) & ((32*1024) - 1))]->page) : ( mem_translate((mem), ((md_addr_t)((regs.regs_PC)))))) ? *((word_t *)(( ((mem)->ptab[((((md_addr_t)((regs.regs_PC))) >> 12) & ((32*1024) - 1))] && (mem)->ptab[((((md_addr_t)((regs.regs_PC))) >> 12) & ((32*1024) - 1))]->tag == (((md_addr_t)((regs.regs_PC))) >> (12 + 15))) ? ( (mem)->ptab_accesses++, (mem)->ptab[((((md_addr_t)((regs.regs_PC))) >> 12) & ((32*1024) - 1))]->page) : ( mem_translate((mem), ((md_addr_t)((regs.regs_PC)))))) + (((regs.regs_PC)) & (4096 - 1)))) : 0)); inst.b = ((( ((mem)->ptab[((((md_addr_t)((regs.regs_PC) + sizeof(word_t))) >> 12) & ((32*1024) - 1))] && (mem)->ptab[((((md_addr_t)((regs.regs_PC) + sizeof(word_t))) >> 12) & ((32*1024) - 1))]->tag == (((md_addr_t)((regs.regs_PC) + sizeof(word_t))) >> (12 + 15))) ? ( (mem)->ptab_accesses++, (mem)->ptab[((((md_addr_t)((regs.regs_PC) + sizeof(word_t))) >> 12) & ((32*1024) - 1))]->page) : ( mem_translate((mem), ((md_addr_t)((regs.regs_PC) + sizeof(word_t)))))) ? *((word_t *)(( ((mem)->ptab[((((md_addr_t)((regs.regs_PC) + sizeof(word_t))) >> 12) & ((32*1024) - 1))] && (mem)->ptab[((((md_addr_t)((regs.regs_PC) + sizeof(word_t))) >> 12) & ((32*1024) - 1))]->tag == (((md_addr_t)((regs.regs_PC) + sizeof(word_t))) >> (12 + 15))) ? ( (mem)->ptab_accesses++, (mem)->ptab[((((md_addr_t)((regs.regs_PC) + sizeof(word_t))) >> 12) & ((32*1024) - 1))]->page) : ( mem_translate((mem), ((md_addr_t)((regs.regs_PC) + sizeof(word_t)))))) + (((regs.regs_PC) + sizeof(word_t)) & (4096 - 1)))) : 0)); };
 
 
@@ -5233,7 +5229,7 @@ sim_main(void)
 
       switch (op)
  {
-# 364 "sim-safe.c"
+# 367 "sim-safe.c"
 # 1 "machine.def" 1
 # 199 "machine.def"
 case NOP: { }; break;
@@ -5473,37 +5469,37 @@ case MTC1: { (regs.regs_F.l[((inst.b >> 24))] = ((regs.regs_R[((inst.b >> 16) & 
 case DMTC1: { if ((((inst.b >> 24)) & 01) || ((((inst.b >> 16) & 0xff)) & 01)) { fault = (md_fault_alignment); break; }; (regs.regs_F.l[((inst.b >> 24))] = ((regs.regs_R[((inst.b >> 16) & 0xff)]))); (regs.regs_F.l[(((inst.b >> 24))+1)] = ((regs.regs_R[(((inst.b >> 16) & 0xff))+1]))); }; break;
 # 2135 "machine.def"
 case CTC1: { }; break;
-# 365 "sim-safe.c" 2
+# 368 "sim-safe.c" 2
  default:
-   _panic("sim-safe.c", __FUNCTION__, 366, "attempted to execute a bogus opcode");
+   _panic("sim-safe.c", __FUNCTION__, 369, "attempted to execute a bogus opcode");
       }
 
       if (fault != md_fault_none)
- _fatal("sim-safe.c", __FUNCTION__, 370, "fault (%d) detected @ 0x%08p", fault, regs.regs_PC);
+ _fatal("sim-safe.c", __FUNCTION__, 373, "fault (%d) detected @ 0x%08p", fault, regs.regs_PC);
 
       if (verbose)
  {
    myfprintf(
-# 374 "sim-safe.c" 3 4
+# 377 "sim-safe.c" 3 4
             stderr
-# 374 "sim-safe.c"
+# 377 "sim-safe.c"
                   , "%10n [xor: 0x%08x] @ 0x%08p: ",
       sim_num_insn, md_xor_regs(&regs), regs.regs_PC);
    md_print_insn(inst, regs.regs_PC, 
-# 376 "sim-safe.c" 3 4
+# 379 "sim-safe.c" 3 4
                                     stderr
-# 376 "sim-safe.c"
+# 379 "sim-safe.c"
                                           );
    if ((md_op2flags[op]) & 0x00000020)
      myfprintf(
-# 378 "sim-safe.c" 3 4
+# 381 "sim-safe.c" 3 4
               stderr
-# 378 "sim-safe.c"
+# 381 "sim-safe.c"
                     , "  mem: 0x%08p", addr);
    fprintf(
-# 379 "sim-safe.c" 3 4
+# 382 "sim-safe.c" 3 4
           stderr
-# 379 "sim-safe.c"
+# 382 "sim-safe.c"
                 , "\n");
 
  }

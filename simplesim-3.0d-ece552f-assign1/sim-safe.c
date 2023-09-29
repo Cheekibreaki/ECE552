@@ -147,10 +147,7 @@ sim_reg_stats(struct stat_sdb_t *sdb)
   stat_reg_formula(sdb, "sim_load_ratio",
 		   "load instruction fraction",
 		   "sim_num_loads / sim_num_insn", NULL);
-
-  stat_reg_counter(sdb, "sim_num_lduh",
-		   "total number of load use hazards",
-		   &sim_num_lduh, sim_num_lduh, NULL);
+3;
   stat_reg_formula(sdb, "sim_load_use_ratio",
 		   "load use fraction",
 		   "sim_num_lduh / sim_num_insn", NULL);
@@ -402,10 +399,9 @@ sim_main(void)
       }
 
       /* ECE552 Assignment 0 - BEGIN CODE */
-      if((MD_OP_FLAGS(op) & F_MEM) && (MD_OP_FLAGS(op) & F_LOAD))
+      /*if((MD_OP_FLAGS(op) & F_MEM) && (MD_OP_FLAGS(op) & F_LOAD))
         sim_num_loads++;
 
-      
       int i;
       for (i = 0; i < 3; i++) {
         if (r_in[i] != DNA && reg_ready [r_in [i]] > sim_num_insn) {
@@ -421,8 +417,35 @@ sim_main(void)
           reg_ready[r_out[0]] = sim_num_insn + 2;
         if (r_out[1] != DNA)
           reg_ready[r_out[1]] = sim_num_insn + 2;
-      }
+      } */
       /* ECE552 Assignment 0 - END CODE */
+      
+      
+      /* ECE552 Assignment 1 - BEGIN CODE*/
+      int i, stall;
+      for (i = 0; i < 3; i++) {
+        if (r_in[i] != DNA) {
+          stall = reg_ready [r_in [i]] - sim_num_insn;
+          if(stall == 2){
+            sim_num_RAW_hazard_q2++;
+            reg_ready [r_in [i]]--;
+            break;
+          }
+          if(stall == 1){
+            sim_num_RAW_hazard_q1++;
+            reg_ready [r_in [i]]--;
+            break;
+          }
+          reg_ready [r_in [i]]--;
+        }
+      }
+      if (r_out[0] != DNA){
+        reg_ready[r_out[0]] = sim_num_insn + 3;
+      }
+      if (r_out[1] != DNA){
+        reg_ready[r_out[1]] = sim_num_insn + 3;
+      }
+      /* ECE552 Assignment 1 - END CODE*/
 
       if (fault != md_fault_none)
 	fatal("fault (%d) detected @ 0x%08p", fault, regs.regs_PC);

@@ -10,58 +10,57 @@
 
 gcc2_compiled.:
 __gnu_compiled_c:
-	.globl	globvar
-	.sdata
-	.align	2
-globvar:
-	.word	1
 	.text
 	.align	2
 	.globl	main
 
 	.text
 
-	.loc	1 6
+	.loc	1 5
 	.ent	main
 main:
-	.frame	$fp,24,$31		# vars= 0, regs= 2/0, args= 16, extra= 0
-	.mask	0xc0000000,-4
+	.frame	$fp,32,$31		# vars= 0, regs= 4/0, args= 16, extra= 0
+	.mask	0xc0030000,-4
 	.fmask	0x00000000,0
-	subu	$sp,$sp,24
-	sw	$31,20($sp)
-	sw	$fp,16($sp)
+	subu	$sp,$sp,32
+	sw	$31,28($sp)
+	sw	$fp,24($sp)
+	sw	$17,20($sp)
+	sw	$16,16($sp)
 	move	$fp,$sp
-	sw	$4,24($fp)
-	sw	$5,28($fp)
+	sw	$4,32($fp)
+	sw	$5,36($fp)
 	jal	__main
-	move	$3,$0
+	move	$16,$0
+	lw	$3,36($fp)
+	addu	$2,$3,4
+	lw	$4,0($2)
+	jal	atoi
+	move	$17,$2
+	li	$3,0x00000001		# 1
 	li	$4,0x00000001		# 1
 	li	$5,0x00000001		# 1
-	move	$6,$0
-	li	$7,0x00004000		# 16384
-	move	$8,$0
-	move	$9,$0
-	li	$10,0x00989680		# 10000000
 $L2:
-	slt	$2,$8,$10
+	slt	$2,$16,$17
 	bne	$2,$0,$L4
 	j	$L3
 $L4:
-	lw	$3,globvar
-	sw	$7,0($3)
-	addu	$8,$8,1
- #APP
-	nop
-	nop
- #NO_APP
+	addu	$3,$3,1
+	addu	$4,$4,$3
+	addu	$16,$16,1
+	addu	$3,$3,1
+	addu	$5,$5,1
+	addu	$4,$4,$3
 	j	$L2
 $L3:
 	move	$2,$0
 	j	$L1
 $L1:
 	move	$sp,$fp			# sp not trusted here
-	lw	$31,20($sp)
-	lw	$fp,16($sp)
-	addu	$sp,$sp,24
+	lw	$31,28($sp)
+	lw	$fp,24($sp)
+	lw	$17,20($sp)
+	lw	$16,16($sp)
+	addu	$sp,$sp,32
 	j	$31
 	.end	main

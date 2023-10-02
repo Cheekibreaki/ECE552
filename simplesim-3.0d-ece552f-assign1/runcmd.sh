@@ -4,7 +4,7 @@ make sim-safe
 /cad2/ece552f/compiler/bin/ssbig-na-sstrix-gcc mbq1.c -S
 /cad2/ece552f/compiler/bin/ssbig-na-sstrix-gcc mbq1.c -O0 -o mbq10
 # ./sim-safe -v -max:inst 1000 -dumpconfig config.txt -redir:sim go.simout -redir:prog go.progout mbq10
-./sim-safe -dumpconfig config.txt -redir:sim go.simout -redir:prog go.progout mbq10
+./sim-safe -dumpconfig config.txt -redir:sim go.simout -redir:prog go.progout mbq10 100000
 # ./sim-safe -dumpconfig config.txt -redir:sim go.simout -redir:prog go.progout go.pisa-big 50 9 2stone9.in
 echo "----------------------------------------------------"
 cat go.simout

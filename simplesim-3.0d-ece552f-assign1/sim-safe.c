@@ -78,7 +78,8 @@ static counter_t reg_readyP1[MD_TOTAL_REGS];
 static counter_t reg_readyP2[MD_TOTAL_REGS];
 static counter_t sim_num_RAW_hazard_q1;
 static counter_t sim_num_RAW_hazard_q2;
-static counter_t stall_test_1, stall_test_2;
+static counter_t stall_test_1P1, stall_test_2P1;
+static counter_t stall_test_1P2, stall_test_2P2;
 /* ECE552 Assignment 1 - STATS COUNTERS - END */
 
 /*
@@ -159,13 +160,21 @@ sim_reg_stats(struct stat_sdb_t *sdb)
   /* ECE552 Assignment 0 - END CODE */
 
   /* ECE552 Assignment 1 - BEGIN CODE */
-  stat_reg_counter(sdb, "count_1_stall_num",
-		   "number of 1 stall hazards",
-		   &stall_test_1, stall_test_1, NULL);
+  stat_reg_counter(sdb, "count_1_stall_num_P1",
+		   "number of 1 stall hazards P1",
+		   &stall_test_1P1, stall_test_1P1, NULL);
 
-  stat_reg_counter(sdb, "count_2_stall_num",
-		   "number of 2 stalls hazards",
-		   &stall_test_2, stall_test_2, NULL);
+  stat_reg_counter(sdb, "count_2_stall_num_P1",
+		   "number of 2 stalls hazards P1",
+		   &stall_test_2P1, stall_test_2P1, NULL);
+
+  stat_reg_counter(sdb, "count_1_stall_num_P2",
+		   "number of 1 stall hazards P2",
+		   &stall_test_1P2, stall_test_1P2, NULL);
+
+  stat_reg_counter(sdb, "count_2_stall_num_P2",
+		   "number of 2 stalls hazards P2",
+		   &stall_test_2P2, stall_test_2P2, NULL);
 
   stat_reg_counter(sdb, "sim_num_RAW_hazard_q1",
 		   "total number of RAW hazards (q1)",
@@ -440,7 +449,12 @@ sim_main(void)
           /* P1 */
           stall = reg_readyP1 [r_in [i]] - sim_num_insn;
           if(stall > 0){
-            sim_num_RAW_hazard_q1+=stall;
+            if(stall == 2)
+              stall_test_2P1++;
+            else if(stall == 1)
+              stall_test_1P1++;
+            // sim_num_RAW_hazard_q1+=stall;
+            sim_num_RAW_hazard_q1++;
             reg_readyP1[r_in[i]]--;
             break;
           }
@@ -458,11 +472,12 @@ sim_main(void)
             )
           ){
             if(stall == 2)
-              stall_test_2++;
+              stall_test_2P2++;
             else if(stall == 1)
-              stall_test_1++;
+              stall_test_1P2++;
 
-            sim_num_RAW_hazard_q2+=stall;
+            // sim_num_RAW_hazard_q2+=stall;
+            sim_num_RAW_hazard_q2++;
             reg_readyP2[r_in[i]]--;
             break;
           }

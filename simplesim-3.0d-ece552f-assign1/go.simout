@@ -5,9 +5,9 @@ non-commercial use.  No portion of this work may be used by any commercial
 entity, or for any commercial purpose, without the prior written permission
 of SimpleScalar, LLC (info@simplescalar.com).
 
-sim: command line: sim-safe -dumpconfig config.txt -redir:sim go.simout -redir:prog go.progout mbq10 
+sim: command line: ./sim-safe -dumpconfig config.txt -redir:sim go.simout -redir:prog go.progout mbq10 
 
-sim: simulation started @ Fri Sep 29 18:01:49 2023, options follow:
+sim: simulation started @ Mon Oct  2 00:38:23 2023, options follow:
 
 sim-safe: This simulator implements a functional simulator.  This
 functional simulator is the simplest, most user-friendly simulator in the
@@ -32,19 +32,22 @@ rather than speed.
 sim: ** starting functional simulation **
 
 sim: ** simulation statistics **
-sim_num_insn               80006320 # total number of instructions executed
-sim_num_refs               10003723 # total number of loads and stores executed
-sim_elapsed_time                  1 # total simulation time in seconds
-sim_inst_rate          80006320.0000 # simulation speed (in insts/sec)
-sim_num_loads                     0 # total number of load instructions
-sim_load_ratio               0.0000 # load instruction fraction
-sim_load_use_ratio     <error: variable is undefined> # load use fraction
-sim_num_RAW_hazard_q1           117 # total number of RAW hazards (q1)
-sim_num_RAW_hazard_q2      20000834 # total number of RAW hazards (q2)
+sim_num_insn               80006325 # total number of instructions executed
+sim_num_refs               20003723 # total number of loads and stores executed
+sim_elapsed_time                  2 # total simulation time in seconds
+sim_inst_rate          40003162.5000 # simulation speed (in insts/sec)
+sim_num_loads              10000353 # total number of load instructions
+sim_load_ratio               0.1250 # load instruction fraction
+sim_num_lduh               10000091 # total number of load use hazards
+sim_load_use_ratio           0.1250 # load use fraction
+count_1_stall_num          10000775 # number of 1 stall hazards
+count_2_stall_num          10000089 # number of 2 stalls hazards
+sim_num_RAW_hazard_q1      40001785 # total number of RAW hazards (q1)
+sim_num_RAW_hazard_q2      30000953 # total number of RAW hazards (q2)
 CPI_from_RAW_hazard_q1       1.0000 # CPI from RAW hazard (q1)
 CPI_from_RAW_hazard_q2       1.0000 # CPI from RAW hazard (q2)
 ld_text_base             0x00400000 # program text (code) segment base
-ld_text_size                  23232 # program text (code) size in bytes
+ld_text_size                  23264 # program text (code) size in bytes
 ld_data_base             0x10000000 # program initialized data segment base
 ld_data_size                   4096 # program init'ed `.data' and uninit'ed `.bss' size in bytes
 ld_stack_base            0x7fffc000 # program stack segment base (highest address in stack)
@@ -52,9 +55,9 @@ ld_stack_size                 16384 # program initial stack size
 ld_prog_entry            0x00400140 # program entry point (initial PC)
 ld_environ_base          0x7fff8000 # program environment base address address
 ld_target_big_endian              0 # target executable endian-ness, non-zero if big endian
-mem.page_count                   13 # total number of pages allocated
-mem.page_mem                    52k # total size of memory pages allocated
-mem.ptab_misses                  13 # total first level page table misses
-mem.ptab_accesses         340179142 # total page table accesses
-mem.ptab_miss_rate           0.0000 # first level page table miss rate
+mem.page_count                   14 # total number of pages allocated
+mem.page_mem                    56k # total size of memory pages allocated
+mem.ptab_misses            20000013 # total first level page table misses
+mem.ptab_accesses         360178514 # total page table accesses
+mem.ptab_miss_rate           0.0555 # first level page table miss rate
 

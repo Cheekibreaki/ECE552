@@ -74,8 +74,11 @@ static counter_t sim_num_lduh = 0;
 /* ECE552 Assignment 0 COUNTER - END */
 
 /* ECE552 Assignment 1 - STATS COUNTERS - BEGIN */
+static counter_t reg_readyP1[MD_TOTAL_REGS];
+static counter_t reg_readyP2[MD_TOTAL_REGS];
 static counter_t sim_num_RAW_hazard_q1;
 static counter_t sim_num_RAW_hazard_q2;
+static counter_t stall_test_1, stall_test_2;
 /* ECE552 Assignment 1 - STATS COUNTERS - END */
 
 /*
@@ -147,13 +150,22 @@ sim_reg_stats(struct stat_sdb_t *sdb)
   stat_reg_formula(sdb, "sim_load_ratio",
 		   "load instruction fraction",
 		   "sim_num_loads / sim_num_insn", NULL);
-3;
+  stat_reg_counter(sdb, "sim_num_lduh",
+		   "total number of load use hazards",
+		   &sim_num_lduh, sim_num_lduh, NULL);
   stat_reg_formula(sdb, "sim_load_use_ratio",
 		   "load use fraction",
 		   "sim_num_lduh / sim_num_insn", NULL);
   /* ECE552 Assignment 0 - END CODE */
 
   /* ECE552 Assignment 1 - BEGIN CODE */
+  stat_reg_counter(sdb, "count_1_stall_num",
+		   "number of 1 stall hazards",
+		   &stall_test_1, stall_test_1, NULL);
+
+  stat_reg_counter(sdb, "count_2_stall_num",
+		   "number of 2 stalls hazards",
+		   &stall_test_2, stall_test_2, NULL);
 
   stat_reg_counter(sdb, "sim_num_RAW_hazard_q1",
 		   "total number of RAW hazards (q1)",
@@ -399,7 +411,7 @@ sim_main(void)
       }
 
       /* ECE552 Assignment 0 - BEGIN CODE */
-      /*if((MD_OP_FLAGS(op) & F_MEM) && (MD_OP_FLAGS(op) & F_LOAD))
+      if((MD_OP_FLAGS(op) & F_MEM) && (MD_OP_FLAGS(op) & F_LOAD))
         sim_num_loads++;
 
       int i;
@@ -417,33 +429,57 @@ sim_main(void)
           reg_ready[r_out[0]] = sim_num_insn + 2;
         if (r_out[1] != DNA)
           reg_ready[r_out[1]] = sim_num_insn + 2;
-      } */
+      }
       /* ECE552 Assignment 0 - END CODE */
       
       
       /* ECE552 Assignment 1 - BEGIN CODE*/
-      int i, stall;
+      int stall;
       for (i = 0; i < 3; i++) {
         if (r_in[i] != DNA) {
-          stall = reg_ready [r_in [i]] - sim_num_insn;
-          if(stall == 2){
-            sim_num_RAW_hazard_q2++;
-            reg_ready [r_in [i]]--;
+          /* P1 */
+          stall = reg_readyP1 [r_in [i]] - sim_num_insn;
+          if(stall > 0){
+            sim_num_RAW_hazard_q1+=stall;
+            reg_readyP1[r_in[i]]--;
             break;
           }
-          if(stall == 1){
-            sim_num_RAW_hazard_q1++;
-            reg_ready [r_in [i]]--;
-            break;
-          }
-          reg_ready [r_in [i]]--;
         }
       }
-      if (r_out[0] != DNA){
-        reg_ready[r_out[0]] = sim_num_insn + 3;
+      for (i = 0; i < 3; i++) {
+        if (r_in[i] != DNA) {
+          /* P2 */
+          stall = reg_readyP2 [r_in [i]] - sim_num_insn;
+          if(
+            (stall > 0) && 
+            (
+              !(MD_OP_FLAGS(op) & F_STORE) ||
+              (MD_OP_FLAGS(op) & F_STORE && i == 1)
+            )
+          ){
+            if(stall == 2)
+              stall_test_2++;
+            else if(stall == 1)
+              stall_test_1++;
+
+            sim_num_RAW_hazard_q2+=stall;
+            reg_readyP2[r_in[i]]--;
+            break;
+          }
+        }
       }
-      if (r_out[1] != DNA){
-        reg_ready[r_out[1]] = sim_num_insn + 3;
+      
+      for (i = 0; i < 2; i++) {
+        if (r_out[i] != DNA){
+          /* P1 */
+          reg_readyP1[r_out[i]] = sim_num_insn + 3;
+          
+          /* P2 */
+          if(MD_OP_FLAGS(op) & F_LOAD)
+            reg_readyP2[r_out[i]] = sim_num_insn + 3;
+          else
+            reg_readyP2[r_out[i]] = sim_num_insn + 2;
+        }
       }
       /* ECE552 Assignment 1 - END CODE*/
 

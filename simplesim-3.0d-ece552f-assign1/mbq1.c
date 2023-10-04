@@ -11,7 +11,7 @@ int  main (int argc, char *argv[])
 
     switch(atoi(argv[1])){
         case 1:
-        /**/
+        /*two stall*/
             while(i < iter){
                 r1 = globvar;
                 res = r1 + iter;
@@ -22,7 +22,7 @@ int  main (int argc, char *argv[])
             break;
         case 2:
             /* 
-            * Case2. for 1 stall 
+            * Case2. for one stall 
             * lw	$1,globvar
             * move	$5,$8
             * addu	$3,$1,$9
@@ -67,6 +67,18 @@ int  main (int argc, char *argv[])
             }
             break;
         case 5:
+        /*one stall + one stall(propogated)*/
+            while(i < iter){
+                r1 = r4 + r5;
+                r3 = r2 + r4;
+                r5 = r1 + r4;
+                r1 = r3 + r4;
+                i++;
+                asm("nop");
+                asm("nop");
+            }
+            break;
+        case 6:
         /*Piority Question*/
             while(i < iter){
                 r1 = r4 + r5;
@@ -77,8 +89,8 @@ int  main (int argc, char *argv[])
                 asm("nop");
             }
             break;
-        case 6:
-        /*two stalls + one stall*/
+        case 7:
+        /*two stalls + one Propogate stall*/
             while(i < iter){
                 r1 = r4 + r5;
                 r3 = r1 + r4;

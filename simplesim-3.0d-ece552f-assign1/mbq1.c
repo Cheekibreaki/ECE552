@@ -7,7 +7,7 @@ int  main (int argc, char *argv[])
     register int res = 0, r1 = 1, r2 = 1, r3 = 0, r4, r5;
 
     register int i = 0;
-    register int iter = 100001;
+    register int iter = 100000;
 
     switch(atoi(argv[1])){
         case 1:
@@ -78,7 +78,7 @@ int  main (int argc, char *argv[])
             }
             break;
         case 6:
-        /*2 stalls + 1 stall*/
+        /*two stalls + one stall*/
             while(i < iter){
                 r1 = r4 + r5;
                 r3 = r1 + r4;
@@ -90,47 +90,47 @@ int  main (int argc, char *argv[])
             break;
     }
 
-// #ifdef P2_BENCHMARKS
-//     /* ALU operations */
-//     // while(i < iter){
-//     //     res = r1 + r2;
+#ifdef P2_BENCHMARKS
+    /* ALU operations */
+    // while(i < iter){
+    //     res = r1 + r2;
 
-//     //     /*ALU+STval 0 stall*/
-//     //     // globvar = res;
+    //     /*ALU+STval 0 stall*/
+    //     // globvar = res;
 
-//     //     /*ALU+STaddr 1 stall*/
-//     //     // *(int *)(res) = r_const;
+    //     /*ALU+STaddr 1 stall*/
+    //     // *(int *)(res) = r_const;
 
-//     //     /*ALU+ALU 1 stall*/
-//     //     // r3 = res + r1;
+    //     /*ALU+ALU 1 stall*/
+    //     // r3 = res + r1;
 
-//     //     /*ALU+LWaddr 1 stall*/
-//     //     // r3 = *(int *)(res);
-//     //     i++;
-//     //     asm("nop");
-//     //     asm("nop");
-//     // }
+    //     /*ALU+LWaddr 1 stall*/
+    //     // r3 = *(int *)(res);
+    //     i++;
+    //     asm("nop");
+    //     asm("nop");
+    // }
 
-//     /* Load Operations */
-//     while(i < iter){
-//         res = globvar;
+    /* Load Operations */
+    while(i < iter){
+        res = globvar;
 
-//         /*LW+STval 0 stall*/
-//         // globvar = res;
+        /*LW+STval 0 stall*/
+        // globvar = res;
 
-//         /*LW+STaddr 2 stalls*/
-//         *(int *)(res) = r_const;
+        /*LW+STaddr 2 stalls*/
+        *(int *)(res) = r_const;
 
-//         /*LW+ALU 2 stalls*/
-//         // r3 = res+r1;
+        /*LW+ALU 2 stalls*/
+        // r3 = res+r1;
 
-//         /*LW+LWaddr 2 stalls*/
-//         // r3 = *(int *)(res);
-//         i++;
-//         asm("nop");
-//         asm("nop");
-//     }
-// #endif
+        /*LW+LWaddr 2 stalls*/
+        // r3 = *(int *)(res);
+        i++;
+        asm("nop");
+        asm("nop");
+    }
+#endif
 
     return 0;
 }

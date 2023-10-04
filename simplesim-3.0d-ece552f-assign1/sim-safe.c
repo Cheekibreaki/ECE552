@@ -69,13 +69,13 @@
 
 /* ECE552 Assignment 0 COUNTER - BEGIN */
 static counter_t sim_num_loads = 0;
-static counter_t reg_ready[MD_TOTAL_REGS];
+// static counter_t reg_ready[MD_TOTAL_REGS];
 static counter_t sim_num_lduh = 0;
 /* ECE552 Assignment 0 COUNTER - END */
 
 /* ECE552 Assignment 1 - STATS COUNTERS - BEGIN */
-static counter_t reg_readyP1[MD_TOTAL_REGS];
-static counter_t reg_readyP2[MD_TOTAL_REGS];
+static counter_t reg_readyP1[MD_TOTAL_REGS] = {0};
+// static counter_t reg_readyP2[MD_TOTAL_REGS] = {0};
 static counter_t sim_num_RAW_hazard_q1;
 static counter_t sim_num_RAW_hazard_q2;
 static counter_t stall_test_1P1, stall_test_2P1;
@@ -420,82 +420,91 @@ sim_main(void)
       }
 
       /* ECE552 Assignment 0 - BEGIN CODE */
-      if((MD_OP_FLAGS(op) & F_MEM) && (MD_OP_FLAGS(op) & F_LOAD))
-        sim_num_loads++;
+      // if((MD_OP_FLAGS(op) & F_MEM) && (MD_OP_FLAGS(op) & F_LOAD))
+      //   sim_num_loads++;
 
-      int i;
-      for (i = 0; i < 3; i++) {
-        if (r_in[i] != DNA && reg_ready [r_in [i]] > sim_num_insn) {
-          if ((i == 0) && (MD_OP_FLAGS(op) & F_MEM) && (MD_OP_FLAGS(op) & F_STORE)) {
-            continue;
-          }
-          sim_num_lduh++;
-          break;
-        }
-      }
-      if ((MD_OP_FLAGS(op) & F_MEM) && (MD_OP_FLAGS(op) & F_LOAD)) {
-        if (r_out[0] != DNA)
-          reg_ready[r_out[0]] = sim_num_insn + 2;
-        if (r_out[1] != DNA)
-          reg_ready[r_out[1]] = sim_num_insn + 2;
-      }
+      // int i;
+      // for (i = 0; i < 3; i++) {
+      //   if (r_in[i] != DNA && reg_ready [r_in [i]] > sim_num_insn) {
+      //     if ((i == 0) && (MD_OP_FLAGS(op) & F_MEM) && (MD_OP_FLAGS(op) & F_STORE)) {
+      //       continue;
+      //     }
+      //     sim_num_lduh++;
+      //     break;
+      //   }
+      // }
+      // if ((MD_OP_FLAGS(op) & F_MEM) && (MD_OP_FLAGS(op) & F_LOAD)) {
+      //   if (r_out[0] != DNA)
+      //     reg_ready[r_out[0]] = sim_num_insn + 2;
+      //   if (r_out[1] != DNA)
+      //     reg_ready[r_out[1]] = sim_num_insn + 2;
+      // }
       /* ECE552 Assignment 0 - END CODE */
       
       
       /* ECE552 Assignment 1 - BEGIN CODE*/
-      int stall;
+      int stall = 0, i, maxidx = 0, maxstall = 0;
+      /* P1 */
       for (i = 0; i < 3; i++) {
         if (r_in[i] != DNA) {
-          /* P1 */
-          stall = reg_readyP1 [r_in [i]] - sim_num_insn;
+          stall = reg_readyP1[r_in[i]] - sim_num_insn;
           if(stall > 0){
-            if(stall == 2)
-              stall_test_2P1++;
-            else if(stall == 1)
-              stall_test_1P1++;
-            // sim_num_RAW_hazard_q1+=stall;
-            sim_num_RAW_hazard_q1++;
-            reg_readyP1[r_in[i]]--;
-            break;
+            reg_readyP1[r_in[i]]-=stall;
+            if(stall > maxstall){
+              maxstall = stall;
+              maxidx = i;
+            }
           }
         }
       }
-      for (i = 0; i < 3; i++) {
-        if (r_in[i] != DNA) {
-          /* P2 */
-          stall = reg_readyP2 [r_in [i]] - sim_num_insn;
-          if(
-            (stall > 0) && 
-            (
-              !(MD_OP_FLAGS(op) & F_STORE) ||
-              (MD_OP_FLAGS(op) & F_STORE && i == 1)
-            )
-          ){
-            if(stall == 2)
-              stall_test_2P2++;
-            else if(stall == 1)
-              stall_test_1P2++;
-
-            // sim_num_RAW_hazard_q2+=stall;
-            sim_num_RAW_hazard_q2++;
-            reg_readyP2[r_in[i]]--;
-            break;
-          }
-        }
-      }
-      
       for (i = 0; i < 2; i++) {
         if (r_out[i] != DNA){
-          /* P1 */
           reg_readyP1[r_out[i]] = sim_num_insn + 3;
-          
-          /* P2 */
-          if(MD_OP_FLAGS(op) & F_LOAD)
-            reg_readyP2[r_out[i]] = sim_num_insn + 3;
-          else
-            reg_readyP2[r_out[i]] = sim_num_insn + 2;
         }
       }
+      if(maxstall > 0){
+        sim_num_RAW_hazard_q1++;
+        if(maxstall == 2)
+          stall_test_2P1++;
+        else if(maxstall == 1)
+          stall_test_1P1++;
+      }
+
+
+      
+      
+      /* P2 */
+      // for (i = 0; i < 3; i++) {
+      //   if (r_in[i] != DNA) {
+      //     /* P2 */
+      //     stall = reg_readyP2 [r_in [i]] - sim_num_insn;
+      //     if(
+      //       (stall > 0) && 
+      //       (
+      //         !(MD_OP_FLAGS(op) & F_STORE) ||
+      //         (MD_OP_FLAGS(op) & F_STORE && i == 1)
+      //       )
+      //     ){
+      //       if(stall == 2)
+      //         stall_test_2P2++;
+      //       else if(stall == 1)
+      //         stall_test_1P2++;
+
+      //       // sim_num_RAW_hazard_q2+=stall;
+      //       sim_num_RAW_hazard_q2++;
+      //       reg_readyP2[r_in[i]]--;
+      //       break;
+      //     }
+      //   }
+      // }
+      // for (i = 0; i < 2; i++) {
+        // if (r_out[i] != DNA){
+          // if(MD_OP_FLAGS(op) & F_LOAD)
+          //   reg_readyP2[r_out[i]] = sim_num_insn + 3;
+          // else
+          //   reg_readyP2[r_out[i]] = sim_num_insn + 2;
+        // }
+      // }
       /* ECE552 Assignment 1 - END CODE*/
 
       if (fault != md_fault_none)

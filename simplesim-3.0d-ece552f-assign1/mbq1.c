@@ -4,20 +4,14 @@
 int globvar = 1;
 int  main (int argc, char *argv[])
 {
-    register int res = 0, r1 = 1, r2 = 1, r3 = 0;
-    register int r_const = 16384;
+    register int res = 0, r1 = 1, r2 = 1, r3 = 0, r4, r5;
 
     register int i = 0;
-    register int independent = 0;
-    register int iter = 10000000;
+    register int iter = 100001;
 
     switch(atoi(argv[1])){
         case 1:
-            /*
-            * Case1. for 2 stalls
-            * lw	$1,globvar
-            * addu	$2,$1,$3
-            */
+        /**/
             while(i < iter){
                 r1 = globvar;
                 res = r1 + iter;
@@ -35,7 +29,7 @@ int  main (int argc, char *argv[])
             */
             while(i < iter){
                 r1 = globvar;
-                r2 = independent;
+                r2 = r3;
                 res = r1 + iter;
                 i++;
                 asm("nop");
@@ -55,6 +49,40 @@ int  main (int argc, char *argv[])
                 res = r1 + iter;
                 r2 = r1 + iter;
                 r3 = r1 + iter;
+                i++;
+                asm("nop");
+                asm("nop");
+            }
+            break;
+        case 4:
+        /*one stall + two stall*/
+            while(i < iter){
+                r1 = r4 + r5;
+                r3 = r2 + r4;
+                r5 = r1 + r4;
+                r1 = r3 + r5;
+                i++;
+                asm("nop");
+                asm("nop");
+            }
+            break;
+        case 5:
+        /*Piority Question*/
+            while(i < iter){
+                r1 = r4 + r5;
+                r3 = r2 + r4;
+                r5 = r1 + r3;
+                i++;
+                asm("nop");
+                asm("nop");
+            }
+            break;
+        case 6:
+        /*2 stalls + 1 stall*/
+            while(i < iter){
+                r1 = r4 + r5;
+                r3 = r1 + r4;
+                r5 = r1 + r3;
                 i++;
                 asm("nop");
                 asm("nop");

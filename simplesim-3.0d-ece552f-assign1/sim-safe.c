@@ -443,27 +443,22 @@ sim_main(void)
       
       
       /* ECE552 Assignment 1 - BEGIN CODE*/
-      int stall = 0, i, maxidx = 0, maxstall = 0;
+      int i;
+      int stall = 0;
+      int maxstall = 0;
       /* P1 */
       for (i = 0; i < 3; i++) {
         if (r_in[i] != DNA) {
           stall = reg_readyP1[r_in[i]] - sim_num_insn;
-          if(stall > 0){
-            reg_readyP1[r_in[i]]--;
-            
-            if(stall > maxstall){
-              maxstall = stall;
-              maxidx = i;
-            }
+          if(stall > maxstall){
+            maxstall = stall;
           }
         }
       }
-      for (i = 0; i < 2; i++) {
-        if (r_out[i] != DNA){
-          reg_readyP1[r_out[i]] = sim_num_insn + 3;
-        }
-      }
       if(maxstall > 0){
+        for(i = 0; i < MD_TOTAL_REGS; i++)
+          reg_readyP1[i]--;
+        
         sim_num_RAW_hazard_q1++;
         if(maxstall == 2)
           stall_test_2P1++;
@@ -471,6 +466,11 @@ sim_main(void)
           stall_test_1P1++;
       }
 
+      for (i = 0; i < 2; i++) {
+        if (r_out[i] != DNA){
+          reg_readyP1[r_out[i]] = sim_num_insn + 3;
+        }
+      }
 
       
       

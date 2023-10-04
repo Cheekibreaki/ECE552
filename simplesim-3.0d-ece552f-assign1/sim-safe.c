@@ -449,7 +449,8 @@ sim_main(void)
         if (r_in[i] != DNA) {
           stall = reg_readyP1[r_in[i]] - sim_num_insn;
           if(stall > 0){
-            reg_readyP1[r_in[i]]-=stall;
+            reg_readyP1[r_in[i]]--;
+            
             if(stall > maxstall){
               maxstall = stall;
               maxidx = i;

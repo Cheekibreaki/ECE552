@@ -457,7 +457,7 @@ sim_main(void)
       }
       if(maxstall > 0){
         for(i = 0; i < MD_TOTAL_REGS; i++)
-          reg_readyP1[i]--;
+          reg_readyP1[i]-=maxstall;
         
         sim_num_RAW_hazard_q1++;
         if(maxstall == 2)

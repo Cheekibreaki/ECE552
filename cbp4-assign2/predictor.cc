@@ -1,8 +1,8 @@
 #include "predictor.h"
 #include <stdio.h>
 
-void printBinary(UINT32 num) {
-    for (int i = 31; i >= 0; i--) {  // Assuming a 32-bit integer
+void printBinary(UINT32 num, int print_num) {
+    for (int i = print_num-1; i >= 0; i--) {  // Assuming a 32-bit integer
         printf("%d", (num & (1 << i)) ? 1 : 0);
         if (i % 4 == 0 && i != 0) {  // Optional: Add space every 4 bits for better readability
             printf(" ");
@@ -71,12 +71,12 @@ void UpdatePredictor_2bitsat(UINT32 PC, bool resolveDir, bool predDir, UINT32 br
 #define BPTSIZE 8 // 2^3
 #define BPTROW 64 // 2^6
 
-static int _6bitBHT[BHTSIZE]={0}; // use only first 6 bit, inialize with NNNNNN
+static int _6bitBHT[BHTSIZE]; // use only first 6 bit, inialize with NNNNNN
 static int _2bitBPT[BPTSIZE][BPTROW]; // use only first 2 bit
 
 void _12bitTagSplit(UINT32 PC, UINT32 & _9bitTag, UINT32 & _3bitTag){
-  _9bitTag = PC & ((UINT32)BHTSIZE-1);
-  _3bitTag = (PC << BHTTAGSIZE) & ((UINT32)BPTSIZE-1);
+  _3bitTag = PC & ((1 << BPTTAGSIZE) - 1);
+  _9bitTag = (PC >> BPTTAGSIZE) & ((1 << BHTTAGSIZE) - 1);
 }
 
 void InitPredictor_2level() { 
@@ -100,8 +100,19 @@ bool GetPrediction_2level(UINT32 PC) {
 void UpdatePredictor_2level(UINT32 PC, bool resolveDir, bool predDir, UINT32 branchTarget) {
   UINT32 _9bitTag, _3bitTag;
   _12bitTagSplit(PC, _9bitTag, _3bitTag);
+  // printBinary(PC,32);
+  // printf("--------------------------------\n");
+  // printBinary(PC,12);
+  // printf("--------------------------------\n");
+  // printBinary(_9bitTag,9);
+  // printf("--------------------------------\n");
+  // printBinary(_3bitTag,3);
+  // printf("--------------------------------\n");
+
+  
 
   int* _2bitPtr = &(_2bitBPT[_3bitTag][_6bitBHT[_9bitTag]]);
+
 
   if(resolveDir == NOT_TAKEN && predDir == TAKEN){
     (*_2bitPtr)--;
@@ -109,14 +120,19 @@ void UpdatePredictor_2level(UINT32 PC, bool resolveDir, bool predDir, UINT32 bra
   if(resolveDir == TAKEN && predDir == NOT_TAKEN){
     (*_2bitPtr)++;
   }
-  if(resolveDir == TAKEN && predDir == TAKEN && _2bitPerdT[PC] < 3){
+  if(resolveDir == TAKEN && predDir == TAKEN && *_2bitPtr < 3){
     (*_2bitPtr)++;
   }
-  if(resolveDir == NOT_TAKEN && predDir == NOT_TAKEN && _2bitPerdT[PC] > 0){
+  if(resolveDir == NOT_TAKEN && predDir == NOT_TAKEN && *_2bitPtr > 0){
     (*_2bitPtr)--;
   }
-  
 
+  _6bitBHT[_9bitTag] = (_6bitBHT[_9bitTag] << 1);
+  _6bitBHT[_9bitTag] = _6bitBHT[_9bitTag] & (BPTROW - 1);
+  _6bitBHT[_9bitTag] |= (UINT32)resolveDir;
+
+
+  return;
 }
 
 /////////////////////////////////////////////////////////////

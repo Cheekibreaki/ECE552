@@ -3,6 +3,7 @@
 
 #include "utils.h"
 #include "tracer.h"
+#define GEHLSIZE 8
 
 /////////////////////////////////////////////////////////////
 
@@ -23,6 +24,8 @@ bool GetPrediction_openend(UINT32 PC);
 void UpdatePredictor_openend(UINT32 PC, bool resolveDir, bool predDir, UINT32 branchTarget);
 
 /////////////////////////////////////////////////////////////
+
+
 
 #endif
 

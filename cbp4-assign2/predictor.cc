@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <vector>
 #include <cmath>
+#include <cassert>
 
 void printBinary(UINT32 num, int print_num) {
     for (int i = print_num-1; i >= 0; i--) {  // Assuming a 32-bit integer
@@ -138,87 +139,73 @@ typedef uint32_t HASHVAL;
 static HASHVAL HashAddress[PBTSIZE] = {0};                        // Connection between GHT and BPT
 static int HistoryLength [PBTSIZE] = {0,2,4,8,16,32,64,128};      // Take short OR long History to hash
 static int AddressLength [PBTSIZE] = {11,11,11,11,11,11,11,11};   // Length of address for each subtable
+static int NBitCounter [PBTSIZE] = {5,5,5,5,5,5,5,5};
 
-//checked
+/*           Global History Table              */
 struct GHR {
   int history_counter;
   int max_history;
-  std::vector<HASHVAL> DataList;
+  std::vector<HASHVAL> data;
 
   GHR(){
       history_counter = 0;
       max_history = GHRMAXHIST;
+      int count = GHRMAXHIST / GHRPATCH;
+      for(int i = 0; i < count; i++){
+        data.push_back(0);
+      }
   }
   void get_GHRAddr(HASHVAL PC/*, path history*/){
     for (int i=0; i<PBTSIZE; i++){
-      HashAddress[i] = HashAlgorithm::get_Hash(AddressLength[i], PC, HistoryLength[i], this);
+      HashAddress[i] = get_Hash(AddressLength[i], PC, HistoryLength[i]);
     }
   }
-
   void update_GHR(bool resolveDir){
     int max = history_counter / GHRPATCH + (history_counter % GHRPATCH > 0);
-    while(DataList.size() < max)
-      DataList.push_back(0);
-    
     for(int lastBit = resolveDir, i = 0; i < max; i++){
-      DataList[i] = (DataList[i] << 1) | lastBit;
-      lastBit = DataList[i] & (1 << (GHRPATCH-1));
+      data[i] = (data[i] << 1) | lastBit;
+      lastBit = data[i] & (1 << (GHRPATCH-1));
     }
     if(history_counter < max_history)
       history_counter++;
   }
-  void printData(){
-    for (int element : DataList) {
-        std::cout << element << " ";
-    }
-    std::cout << std::endl;
-  }
-  void printVectorBits() {
-    for (int element : DataList) {
-      for (int i = 0; i < sizeof(int) * GHRPATCH; i++) {
-        int bit = (element >> (sizeof(int) * GHRPATCH - 1 - i)) & 1;
-        std::cout << bit;
-      }
-      std::cout << ' ';
-    }
-    std::cout << std::endl;
-  }
-};
 
-//checked
-class HashAlgorithm {
-public:
-  static HASHVAL get_HistoryFold(int n/*11*/, int historyLength/*128*/, GHR& ghr){
+  HASHVAL get_HistoryFold(int n, int historyLength){
     if(historyLength < n){
-      return ghr.DataList[0] & ((1 << n) - 1);
+      return data[0] & ((1 << n) - 1);
     }
     HASHVAL res = 0;
 
     int patch = historyLength / GHRPATCH; // assume the modulo is always 0
     for (int i = 0; i< patch; i++){
-      res ^= ghr.DataList[i];
+      res ^= data[i];
     }
     //based on assumption, don't know if this thing is needed or not
-    // res ^= ghr.DataList[patch - 1] | ((1 << historyLength % GHRPATCH) - 1);
+    // res ^= data[patch - 1] | ((1 << historyLength % GHRPATCH) - 1);
     return res % (1<<n);
   }
-
-  static HASHVAL get_Hash(int n, HASHVAL PC, int historyLength, GHR& ghr /*, path history*/){
+  HASHVAL get_Hash(int n, HASHVAL PC, int historyLength /*, path history*/){
     // fold History Address into n bit
-    HASHVAL historyFold = get_HistoryFold(n, historyLength, ghr);
+    HASHVAL historyFold = get_HistoryFold(n, historyLength);
 
     // get n least siginificant bit from PC
-    HASHVAL PCFold = PC & ((1 << (n + 1)) - 1);
+    HASHVAL PCFold = PC & ((1 << n) - 1);
 
     // get 3n bit composed with least siginaficant bit of PC, ghr & path history
     return PCFold ^ historyFold;
   }
 };
 
+/*           Branch Prediction Table              */
 struct Counter {
   int data;
   const int initialized_value = 0;
   int saturate;
+  
+  Counter(){
+    data = 0;
+    saturate = 0;
+  }
   Counter(int counter_bitsize){
     data = initialized_value;
     saturate = (1<<counter_bitsize);
@@ -231,7 +218,7 @@ struct Counter {
     if(data>-saturate)
       data--;
   }
-}
+};
 
 struct Subtable {
   int historyLength; // For Debugging Propose
@@ -239,59 +226,60 @@ struct Subtable {
   int counter_bitsize;
   std::vector<Counter> data; // Dynamically allocated data array
 
+  Subtable(){
+    historyLength = 0;
+    rowNum = 0;
+    counter_bitsize = 0;
+  }
+
   Subtable(int _historyLen, int _rowNum, int _counter_bitsize) :
     historyLength(_historyLen), rowNum(_rowNum),
     counter_bitsize(_counter_bitsize){
-      data.resize(1 << rowNum, Counter(counter_bitsize));
+      int count = 1 << rowNum;
+      for(int i = 0; i < count; i++){
+        data.push_back(Counter(_counter_bitsize));
+      }
   }
-
 };
 
-
-
 struct PBT{
-  PBT pbttable;
-  
-  const int NBitCounter [PBTSIZE] = {5,5,5,5,5,5,5,5};
-
   int theta = 4;
-  
   std::vector<Subtable> PBT_table;
 
   PBT() {
-    PBT_table.reserve(PBTSIZE);
     for(int i=0;i<PBTSIZE;i++){
-      PBT_table.push_back(Subtable(HistoryLength[i],AddressLength[i],NBitCounter[i]))
+      PBT_table.push_back(Subtable(HistoryLength[i],AddressLength[i],NBitCounter[i]));
     }
   }
-
   void update_PBT(bool resolveDir, bool predDir){
-    for(i = 0; i<PBTSIZE; i++){
+    for(int i = 0; i<PBTSIZE; i++){
       Subtable& sub_table = PBT_table[i];
       HASHVAL hashIndex = HashAddress[i];
+      assert(hashIndex >= 0 && hashIndex < sub_table.data.size());
+      Counter& bit_counter = sub_table.data[hashIndex];
 
-      if(hashIndex>=0 && hashIndex<sub_table.data.size()){
-        Counter& bit_counter = sub_table.data[hashIndex];
-
-        if (resolveDir == TAKEN && predDir == NOT_TAKEN) {
-            bit_counter.increment_Counter();
-        } else if (resolveDir == NOT_TAKEN && predDir == TAKEN) {
-            bit_counter.decrement_Counter();
-        }
+      if(resolveDir == NOT_TAKEN && predDir == NOT_TAKEN){
+        bit_counter.decrement_Counter();
       }
-
+      else if (resolveDir == NOT_TAKEN && predDir == TAKEN) {
+        bit_counter.decrement_Counter();
+      }
+      else if (resolveDir == TAKEN && predDir == NOT_TAKEN) {
+        bit_counter.increment_Counter();
+      } 
+      else if(resolveDir == TAKEN && predDir == TAKEN){
+        bit_counter.increment_Counter();
+      }
     }
   }
-  
   int get_NT_T(){ 
     int i;
     int sigma = 0;
     for(i = 0; i<PBTSIZE; i++){
-
-      HASHVAL hashIndex = HashAddress[i];
-
       Subtable& sub_table = PBT_table[i];
-      Counter prediction = sub_table.data[hashIndex];
+      HASHVAL hashIndex = HashAddress[i];
+      assert(hashIndex >= 0 && hashIndex < sub_table.data.size());
+      Counter& prediction = sub_table.data[hashIndex];
 
       sigma += (prediction.data >= 0) ? 1 : 0;
     }
@@ -300,55 +288,31 @@ struct PBT{
     else
       return NOT_TAKEN;
   }
-}
+};
 struct GEHL {
-  GHR ghr; //[TODO] not enough for 128 bit of history
-  PBT pbttable;
+  GHR ghr;
+  PBT pbt;
 
   GEHL(){
-    pbttable = PBT();
+    pbt = PBT();
     ghr = GHR();
   }
 };
 
 static GEHL gehlObject;
 
-int get_pred_PT(int * pred_table, const int & bitnum){
-
-  return TAKEN;
-}
-
 void InitPredictor_openend() {
   gehlObject = GEHL();
-  
 }
 
 bool GetPrediction_openend(UINT32 PC) {
-  // [TODO]: 
-  return TAKEN;
+  gehlObject.ghr.get_GHRAddr(PC);
+  return gehlObject.pbt.get_NT_T();
+  // return TAKEN;
 }
 
 void UpdatePredictor_openend(UINT32 PC, bool resolveDir, bool predDir, UINT32 branchTarget) {
-  
-}
-
-/// UNITTEST AREA ///
-void GHR_TEST1(){
-  // 1 1 1 1 
-  // 3 2 2 2 
-  // 12 8 8 8 
-  GHR tmp;
-  tmp.DataList.push_back(1);
-  tmp.DataList.push_back(1);
-  tmp.DataList.push_back(1);
-  tmp.DataList.push_back(1);
-  tmp.history_counter = 97;
-  
-  tmp.max_history = 256;
-  tmp.printData();
-  tmp.update_GHR(1);
-  tmp.printData();
-  tmp.update_GHR(0);
-  tmp.update_GHR(0);
-  tmp.printData();
+  // Value related with PC already stored in HashAddress[], no need to passin
+  gehlObject.ghr.update_GHR(resolveDir);
+  gehlObject.pbt.update_PBT(resolveDir, predDir);
 }

@@ -138,7 +138,7 @@ typedef uint32_t HASHVAL;
 
 static HASHVAL HashAddress[PBTSIZE] = {0};                        // Connection between GHT and BPT
 static int HistoryLength [PBTSIZE] = {0,2,4,8,16,32,64,128};      // Take short OR long History to hash
-static int AddressLength [PBTSIZE] = {11,11,11,11,11,11,11,11};   // Length of address for each subtable
+static int AddressLength [PBTSIZE] = {11,11,12,12,13,13,14,14};   // Length of address for each subtable
 static int NBitCounter [PBTSIZE] = {5,5,5,5,5,5,5,5};
 
 /*           Global History Table              */
@@ -155,7 +155,7 @@ struct GHR {
         data.push_back(0);
       }
   }
-  void get_GHRAddr(HASHVAL PC/*, path history*/){
+  void get_GHRAddr(HASHVAL PC/*, path history */){
     for (int i=0; i<PBTSIZE; i++){
       HashAddress[i] = get_Hash(AddressLength[i], PC, HistoryLength[i]);
     }
@@ -243,7 +243,8 @@ struct Subtable {
 };
 
 struct PBT{
-  int theta = 4;
+  int theta = PBTSIZE;
+  int sigma = 0;
   std::vector<Subtable> PBT_table;
 
   PBT() {
@@ -252,38 +253,34 @@ struct PBT{
     }
   }
   void update_PBT(bool resolveDir, bool predDir){
-    for(int i = 0; i<PBTSIZE; i++){
-      Subtable& sub_table = PBT_table[i];
-      HASHVAL hashIndex = HashAddress[i];
-      assert(hashIndex >= 0 && hashIndex < sub_table.data.size());
-      Counter& bit_counter = sub_table.data[hashIndex];
+    if(predDir != resolveDir || abs(sigma) <= theta){
+      for(int i = 0; i<PBTSIZE; i++){
+        Subtable& sub_table = PBT_table[i];
+        HASHVAL hashIndex = HashAddress[i];
+        assert(hashIndex >= 0 && hashIndex < sub_table.data.size());
+        Counter& bit_counter = sub_table.data[hashIndex];
 
-      if(resolveDir == NOT_TAKEN && predDir == NOT_TAKEN){
-        bit_counter.decrement_Counter();
-      }
-      else if (resolveDir == NOT_TAKEN && predDir == TAKEN) {
-        bit_counter.decrement_Counter();
-      }
-      else if (resolveDir == TAKEN && predDir == NOT_TAKEN) {
-        bit_counter.increment_Counter();
-      } 
-      else if(resolveDir == TAKEN && predDir == TAKEN){
-        bit_counter.increment_Counter();
+        if(resolveDir)
+          bit_counter.increment_Counter();
+        else
+          bit_counter.decrement_Counter();
       }
     }
   }
   int get_NT_T(){ 
     int i;
-    int sigma = 0;
+    sigma = 0;
     for(i = 0; i<PBTSIZE; i++){
       Subtable& sub_table = PBT_table[i];
       HASHVAL hashIndex = HashAddress[i];
       assert(hashIndex >= 0 && hashIndex < sub_table.data.size());
       Counter& prediction = sub_table.data[hashIndex];
 
-      sigma += (prediction.data >= 0) ? 1 : 0;
+      sigma += prediction.data;
     }
-    if(sigma > theta)
+    sigma += PBTSIZE / 2;
+
+    if(sigma >= 0)
       return TAKEN;
     else
       return NOT_TAKEN;
@@ -308,7 +305,6 @@ void InitPredictor_openend() {
 bool GetPrediction_openend(UINT32 PC) {
   gehlObject.ghr.get_GHRAddr(PC);
   return gehlObject.pbt.get_NT_T();
-  // return TAKEN;
 }
 
 void UpdatePredictor_openend(UINT32 PC, bool resolveDir, bool predDir, UINT32 branchTarget) {

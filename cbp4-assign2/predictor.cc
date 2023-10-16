@@ -162,10 +162,13 @@ struct GHR {
   }
   void update_GHR(bool resolveDir){
     int max = history_counter / GHRPATCH + (history_counter % GHRPATCH > 0);
-    for(int lastBit = resolveDir, i = 0; i < max; i++){
-      data[i] = (data[i] << 1) | lastBit;
-      lastBit = data[i] & (1 << (GHRPATCH-1));
+
+    for(int lastBit = resolveDir, tmpBit, i = 0; i < max; i++){
+      tmpBit = lastBit;
+      lastBit = (data[i] >> (GHRPATCH-1)) & 1;
+      data[i] = (data[i] << 1) | tmpBit;
     }
+
     if(history_counter < max_history)
       history_counter++;
   }

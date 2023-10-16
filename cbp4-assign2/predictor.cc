@@ -138,7 +138,7 @@ typedef uint32_t HASHVAL;
 
 static HASHVAL HashAddress[PBTSIZE] = {0};                        // Connection between GHT and BPT
 static int HistoryLength [PBTSIZE] = {0,2,4,8,16,32,64,128};      // Take short OR long History to hash
-static int AddressLength [PBTSIZE] = {11,11,12,12,13,13,14,14};   // Length of address for each subtable
+static int AddressLength [PBTSIZE] = {10,10,11,11,12,12,13,13};   // Length of address for each subtable
 static int NBitCounter [PBTSIZE] = {5,5,5,5,5,5,5,5};
 
 /*           Global History Table              */

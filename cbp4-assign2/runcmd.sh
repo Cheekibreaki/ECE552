@@ -1,4 +1,5 @@
-make
+make clean > "make.log"
+make > "make.log"
 # ./predictor /cad2/ece552f/cbp4_benchmarks/astar.cbp4.gz
 # ./predictor /cad2/ece552f/cbp4_benchmarks/bwaves.cbp4.gz
 # ./predictor /cad2/ece552f/cbp4_benchmarks/bzip2.cbp4.gz
@@ -25,7 +26,6 @@ files=(
 # Function to run the predictor command and save output to the file
 run_predictor() {
     predictor_command="./predictor $1"
-    echo "Running: $predictor_command"
     $predictor_command >> "$output_file"
 }
 
@@ -38,13 +38,14 @@ done
 wait
 
 # Use grep to extract lines matching the pattern and calculate the average
-average=$(grep "openend: MISPRED_PER_1K_INST" output.txt | awk -F '[: ]+' '{ sum += $4; count++ } END { print "Average: " sum / count }')
+average=$(grep "openend: MISPRED_PER_1K_INST" output.txt | awk -F '[: ]+' '{ sum += $4; count++ } END { print sum / count }')
 
-if [ -n "$average" ]; then
-    echo "Average MISPRED_PER_1K_INST: $average"
-else
-    echo "No MISPRED_PER_1K_INST values found in the output."
-fi
+echo "$average"
+# if [ -n "$average" ]; then
+#     echo "Average MISPRED_PER_1K_INST: $average"
+# else
+#     echo "No MISPRED_PER_1K_INST values found in the output."
+# fi
 
 
 

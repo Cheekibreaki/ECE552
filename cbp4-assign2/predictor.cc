@@ -1,3 +1,4 @@
+#include "updated_values.h"
 #include "predictor.h"
 #include <stdio.h>
 #include <vector>
@@ -140,16 +141,14 @@ typedef uint32_t HASHVAL;
 
 static HASHVAL HashAddress[PBTSIZE] = {0};                        // Connection between GHT and BPT
 static int HistoryLength [PBTSIZE] = {0,4,8,16,32,64,128,256};      // Take short OR long History to hash
-static int AddressLength [PBTSIZE] = {9,9,10,10,11,12,13,13};   // Length of address for each subtable
-static int NBitCounter [PBTSIZE] = {5,5,5,5,5,5,5,5};
+static int AddressLength [PBTSIZE] = {6,7,8,10,11,12,13,13};   // Length of address for each subtable
+static int NBitCounter [PBTSIZE] = {4,4,5,5,5,5,5,5};
 
 // Dynamic History Length Tag
-static int LongHistory [PBTSIZE] = {0,256,384,8,512,32,768,128};
-static int ShortHistory[PBTSIZE] = {0,256,4,8,16,32,64,128};
-
-#define FREQ 4
-static HASHVAL GHTag[2048] = {0};
-
+// #define FREQ 8
+// static HASHVAL GHTag[1024] = {0};
+// static int LongHistory [8] = {0,256,160,8,192,32,384,128};
+// static int ShortHistory[8] = {0,256,4,8,16,32,64,128};
 
 // Path History Register
 #define PHRSIZE 16

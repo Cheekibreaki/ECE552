@@ -32,28 +32,30 @@ main:
 	move	$3,$0
 	move	$4,$0
 	move	$5,$0
-	li	$6,0x000003e8		# 1000
-	li	$7,0x00000001		# 1
-	addu	$4,$3,$6
+	addu	$4,$3,1000
 	addu	$5,$3,$3
 $L2:
-	beq	$5,$3,$L3
-	j	$L4
-$L3:
-	addu	$5,$3,$7
-	bne	$5,$3,$L5
+	beq	$5,$0,$L5
+	addu	$5,$3,$3
 	j	$L6
 $L5:
-	.set	noreorder
-	nop
-	.set	reorder
-$L4:
-	addu	$5,$3,$3
+	addu	$5,$3,1
 $L6:
 	subu	$4,$4,1
-	beq	$4,$3,$L7
-	j	$L2
+ #APP
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+ #NO_APP
+$L4:
+	bne	$4,$0,$L7
+	j	$L3
 $L7:
+	j	$L2
+$L3:
 	move	$2,$0
 	j	$L1
 $L1:

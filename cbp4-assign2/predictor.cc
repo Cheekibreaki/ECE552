@@ -229,6 +229,7 @@ struct GHR {
 };
 
 /*           Branch Prediction Table              */
+// Saturated Counter Implemtation
 struct Counter {
   int data;
   const int initialized_value = 0;
@@ -252,6 +253,7 @@ struct Counter {
   }
 };
 
+// Table T(i), include Row # of Saturated Counters
 struct Subtable {
   int historyLength; // For Debugging Propose
   int rowNum;
@@ -274,6 +276,7 @@ struct Subtable {
   }
 };
 
+// Contains Multiple Table T(i), with Threshold Calculator
 struct PBT{
   int theta = PBTSIZE;
   int sigma = 0;
@@ -290,6 +293,7 @@ struct PBT{
     AC = new Counter(9);
   }
   void update_PBT(bool resolveDir, bool predDir, UINT32 PC){
+    // Counter Update based on resolveDir and predDir
     if(predDir != resolveDir || abs(sigma) <= theta){
       for(int i = 0; i<PBTSIZE; i++){
         Subtable& sub_table = PBT_table[i];
@@ -342,6 +346,8 @@ struct PBT{
     //   GHTag[access] = (PC & 1);
     // }
   }
+
+  // Calculate the Prediction using all Table T(i) P = PBTSIZE/2 + SUM(Counter(i))
   int get_NT_T(){ 
     int i;
     sigma = 0;

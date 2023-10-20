@@ -133,11 +133,11 @@ void UpdatePredictor_2level(UINT32 PC, bool resolveDir, bool predDir, UINT32 bra
 // openend
 /////////////////////////////////////////////////////////////
 #define GHRPATCH 32
-#define GHRMAXHIST 1024
+#define GHRMAXHIST 256
 #define PBTSIZE 8
 #define PHROFFSET 0
 
-typedef uint32_t HASHVAL;
+typedef uint32_t HASHVAL; 
 
 static HASHVAL HashAddress[PBTSIZE] = {0};                        // Connection between GHT and BPT
 static int HistoryLength [PBTSIZE] = {0,4,8,16,32,64,128,256};      // Take short OR long History to hash
@@ -150,16 +150,17 @@ static int NBitCounter [PBTSIZE] = {4,4,5,5,5,5,5,5};
 // static int LongHistory [8] = {0,256,160,8,192,32,384,128};
 // static int ShortHistory[8] = {0,256,4,8,16,32,64,128};
 
-// Path History Register
+// Path History Register bit length
 #define PHRSIZE 16
 
 /*           Global History Table              */
 struct GHR {
-  int history_counter;
-  int max_history;
-  std::vector<HASHVAL> data;
-  uint16_t phr;
+  int history_counter; // set to 0 initially, used to update GHR
+  int max_history; // GHR length, this case 256 bits
+  std::vector<HASHVAL> data; // Our GHR is 256 bits, we use a vector to represent it, with each vector value type HASHVAL which is 32bit 
+  uint16_t phr; // Path history register
 
+  //constructor
   GHR(){
       history_counter = 0;
       max_history = GHRMAXHIST;
@@ -170,13 +171,16 @@ struct GHR {
 
       phr = 0;
   }
+
+  //Based on PC, Find the Index address for 8 tables though hashing
   void get_GHRAddr(HASHVAL PC){
     for (int i=0; i<PBTSIZE; i++){
       HashAddress[i] = get_Hash(AddressLength[i], PC, HistoryLength[i]);
     }
   }
 
-  void update_GHR(bool resolveDir, uint32_t PC){
+  //Update GHR
+  void update_GHR_PHR(bool resolveDir, uint32_t PC){
     int max = history_counter / GHRPATCH + (history_counter % GHRPATCH > 0);
 
     for(int lastBit = resolveDir, tmpBit, i = 0; i < max; i++){
@@ -193,6 +197,7 @@ struct GHR {
     phr |= ((PC << PHROFFSET) & 0b11); 
   }
 
+  //To fold, XOR and then mod to index Address size n
   HASHVAL get_HistoryFold(int n, int historyLength){
     if(historyLength < n){
       return data[0] & ((1 << n) - 1);
@@ -203,11 +208,11 @@ struct GHR {
     for (int i = 0; i< patch; i++){
       res ^= data[i];
     }
-    //based on assumption, don't know if this thing is needed or not
-    // res ^= data[patch - 1] | ((1 << historyLength % GHRPATCH) - 1);
     return res % (1<<n);
   }
 
+  //Based on PC, Path History Register and GHR, 
+  //Fold GHR to index Address size n, and XOR with least n significant bits of PHR and GHR
   HASHVAL get_Hash(int n, HASHVAL PC, int historyLength){
     // fold History Address into n bit
     HASHVAL historyFold = get_HistoryFold(n, historyLength);
@@ -379,6 +384,6 @@ bool GetPrediction_openend(UINT32 PC) {
 
 void UpdatePredictor_openend(UINT32 PC, bool resolveDir, bool predDir, UINT32 branchTarget) {
   // Value related with PC already stored in HashAddress[], no need to passin
-  gehlObject.ghr.update_GHR(resolveDir, PC);
+  gehlObject.ghr.update_GHR_PHR(resolveDir, PC);
   gehlObject.pbt.update_PBT(resolveDir, predDir, PC);
 }

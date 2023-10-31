@@ -83,7 +83,7 @@ static instruction_t* instr_queue[INSTR_QUEUE_SIZE];
 static int instr_queue_size = 0;
 
 
-/*ECE552 LAB3 BEGIN*/
+/*ECE552 Assignment 3 - BEGIN*/
 static instruction_t* instr_queue_pop(){
   assert(instr_queue_size != 0);
   instruction_t* tmp = instr_queue[0]; // Pop from the front
@@ -114,7 +114,7 @@ static bool instr_queue_full(){
 
 static instruction_t* FDPipelineReg = NULL;
 
-/*ECE552 LAB3 END*/
+/*ECE552 Assignment 3 - END*/
 
 //reservation stations (each reservation station entry contains a pointer to an instruction)
 static instruction_t* reservINT[RESERV_INT_SIZE];
@@ -150,17 +150,25 @@ static int fetch_index = 0;
  */
 static bool is_simulation_done(counter_t sim_insn) {
 
+  /* ECE552: YOUR CODE GOES HERE */
+
   // Check IFQ
-
+  int i;
+  for (i=0; i < INSTR_QUEUE_SIZE; i++ ){
+    if(instr_queue[i]!= NULL) return false;
+  }
+  
   // Check RS
-
-  // Check FU
+  for(i=0; i < RESERV_INT_SIZE; i++){
+    if(reservINT[i] != NULL) return false;
+    
+  }
+  for(i=0; i < RESERV_FP_SIZE; i++){
+    if(reservFP[i] != NULL) return false;
+  }
 
   // Check CDB
-
-  // check if fetch_index == sim_insn
-
-  /* ECE552: YOUR CODE GOES HERE */
+  if(commonDataBus != NULL) return false;
 
   return true; //ECE552: you can change this as needed; we've added this so the code provided to you compiles
 }
@@ -199,10 +207,43 @@ void CDB_To_retire(int current_cycle) {
         reservFP[i]->Q[j] = NULL;
     }
   }
-
-  // Do we need to free instruction_t* boardcast?
 }
 
+/*
+*
+*/
+void cleanInstr(instruction_t* instrFinished){
+  bool rsInstrDeleted = false;
+  bool fuInstrDeleted = false;
+  int i = 0;
+  for(i=0; i < RESERV_INT_SIZE; i++){
+      if(reservINT[i]==instrFinished){
+        reservINT[i] = NULL;
+        rsInstrDeleted = true;
+      }
+  }
+  for(i=0; i < RESERV_FP_SIZE; i++){
+      if(reservFP[i]==instrFinished){
+        reservFP[i] = NULL;
+        rsInstrDeleted = true;
+      }
+  }
+  
+  for(i=0; i < FU_INT_SIZE; i++){
+      if(fuINT[i]==instrFinished){
+        fuINT[i] = NULL;
+        fuInstrDeleted = true;
+      }
+  }
+  for(i=0; i < FU_FP_SIZE; i++){
+      if(fuFP[i]==instrFinished){
+        fuFP[i] = NULL;
+        fuInstrDeleted = true;
+      }
+  }
+  assert(rsInstrDeleted);
+  assert(fuInstrDeleted);
+}
 
 /* 
  * Description: 
@@ -215,7 +256,80 @@ void CDB_To_retire(int current_cycle) {
 void execute_To_CDB(int current_cycle) {
 
   /* ECE552: YOUR CODE GOES HERE */
+  assert(commonDataBus != NULL);
+  int i;
 
+  instruction_t* instrOldest=NULL;
+  instruction_t* instrCurr=NULL;
+  for(i=0; i < FU_INT_SIZE; i++){
+    if((current_cycle - fuINT[i]->tom_execute_cycle) >= FU_INT_LATENCY){
+      instrCurr = fuINT[i];
+
+      // Store Case, doesnot go into CDB
+      if(IS_STORE(instrCurr->op)) {
+        instrCurr->tom_cdb_cycle = 0;
+        cleanInstr(instrCurr);
+        continue;
+      }
+      
+      // Check CDB RaceCondi
+      if(instrOldest==NULL || (instrOldest != NULL && (instrOldest->index) > (instrCurr->index))){
+        instrOldest = instrCurr;
+      }
+    }
+  }
+  for(i=0; i < FU_FP_SIZE; i++){
+    if((current_cycle - fuFP[i]->tom_execute_cycle) >= FU_FP_LATENCY){
+      instrCurr = fuFP[i];
+      
+      // Check CDB RaceCondi
+      if(instrOldest==NULL || (instrOldest != NULL && (instrOldest->index) > (instrCurr->index))){
+        instrOldest = instrCurr;
+      }
+    }
+  }
+
+  // Update CDB & instr's cdb_cycle
+  commonDataBus = instrOldest;
+  instrOldest->tom_cdb_cycle = current_cycle;
+  cleanInstr(instrOldest);
+}
+
+
+// able to Execute
+static instruction_t* readyRSINT[RESERV_INT_SIZE];
+static instruction_t* readyRSFP[RESERV_FP_SIZE];
+
+// sort function by array[i]->index
+void sortReadyRS(instruction_t* readyRS[], int size){
+  int i, j;
+  for (i = 0; i < size - 1; i++){
+    for (j = 0; j < size - i - 1; j++){
+      if(readyRS[j]->index > readyRS[j+1]->index){
+        instruction_t * temp = readyRS[j];
+        readyRS[j] = readyRS[j+1];
+        readyRS[j+1] = temp;
+      }
+    }
+  }
+}
+
+// clean array
+void cleanReadyRS(instruction_t* readyRS[], int size){
+  int i;
+  for (i = 0; i < size; i++) {
+      readyRS[i] = NULL;
+  }
+}
+// push array
+void pushReadyRS(instruction_t* readyRS[], instruction_t* instr, int size){
+  int i;
+  for (i = 0; i < size; i++) {
+      if (readyRS[i] == NULL) {
+          readyRS[i] = instr;
+          return;
+      }
+  }
 }
 
 /* 
@@ -231,6 +345,76 @@ void execute_To_CDB(int current_cycle) {
 void issue_To_execute(int current_cycle) {
 
   /* ECE552: YOUR CODE GOES HERE */
+
+  cleanReadyRS(readyRSFP, RESERV_FP_SIZE);
+  cleanReadyRS(readyRSINT, RESERV_INT_SIZE);
+  
+  // check if RS Entry has Empty Q[3] && FU structural Hazard
+  // deal with RS Entry RaceCondi
+  int i, j;
+  bool isready;
+  for(i=0; i < RESERV_FP_SIZE; i++){
+    isready = true;
+    for(j = 0; i < 3; j++){
+      if(reservFP[i]->Q[j] != NULL){
+        isready = false;
+        break;
+      }
+    }
+    if(isready) pushReadyRS(readyRSFP, reservFP[i], RESERV_FP_SIZE);
+  }
+
+  for(i=0; i < RESERV_INT_SIZE; i++){
+    isready = true;
+    for(j = 0; i < 3; j++){
+      if(reservINT[i]->Q[j] != NULL){
+        isready = false;
+        break;
+      }
+    }
+    if(isready) pushReadyRS(readyRSINT, reservINT[i], RESERV_INT_SIZE);
+  }
+
+  sortReadyRS(readyRSFP, RESERV_FP_SIZE);
+  sortReadyRS(readyRSINT, RESERV_INT_SIZE);
+  
+
+  // Update FU and instr execute_cycle
+  i = 0;
+  while(readyRSINT[i]!=NULL){
+    for(j=0; j < FU_INT_SIZE; j++){
+      if(fuINT[j]==NULL){
+        fuINT[j] = readyRSINT[i];
+        fuINT[j]->tom_execute_cycle = current_cycle;
+        break;
+      }
+    }
+    i++;
+  }
+
+  i = 0;
+  while(readyRSFP[i]!=NULL){
+    for(j=0; j < FU_FP_SIZE; j++){
+      if(fuFP[j]==NULL){
+        fuFP[j] =  readyRSFP[i];
+        fuFP[j] -> tom_execute_cycle = current_cycle;
+        break;
+      }
+    }
+    i++;
+  }
+
+}
+
+// -1 for invalid, RS Full
+int returnRSfreeIndex (instruction_t * rs[], int size){
+  int i;
+  for (i = 0; i < size; i++){
+    if (rs[i] == NULL)
+      return i;
+  }
+  
+  return -1;
 }
 
 /* 
@@ -244,8 +428,26 @@ void issue_To_execute(int current_cycle) {
 void dispatch_To_issue(int current_cycle) {
 
   /* ECE552: YOUR CODE GOES HERE */
-
-
+  
+  // get from FDPipelineReg put into RS branch, INT->USES_INT_FU, FP->USES_FP_FU
+  // update instr's issue_cycle
+  if(USES_INT_FU(FDPipelineReg->op)){
+    int ret = returnRSfreeIndex(reservINT, RESERV_INT_SIZE);
+    if(ret != -1){
+      reservINT[ret] = FDPipelineReg;
+      reservINT[ret]->tom_issue_cycle = current_cycle;
+      FDPipelineReg = NULL;
+    }
+  }else if(USES_FP_FU(FDPipelineReg->op)){
+    int ret = returnRSfreeIndex(reservFP, RESERV_FP_SIZE);
+    if(ret != -1){
+      reservFP[ret] = FDPipelineReg;
+      reservFP[ret]->tom_issue_cycle = current_cycle;
+      FDPipelineReg = NULL;
+    }
+  }else{
+    assert(false);
+  }
 }
 
 void update_Fetch_index(instruction_trace_t* trace){
@@ -375,11 +577,10 @@ counter_t runTomasulo(instruction_trace_t* trace)
 
     fetch_To_dispatch(trace, cycle);
 
+    cycle++;
 
-     cycle++;
-
-     if (is_simulation_done(sim_num_insn))
-        break;
+    if (is_simulation_done(sim_num_insn))
+      break;
   }
   
   return cycle;

@@ -82,6 +82,40 @@ static instruction_t* instr_queue[INSTR_QUEUE_SIZE];
 //number of instructions in the instruction queue
 static int instr_queue_size = 0;
 
+
+/*ECE552 LAB3 BEGIN*/
+static instruction_t* instr_queue_pop(){
+  assert(instr_queue_size != 0);
+  instruction_t* tmp = instr_queue[0]; // Pop from the front
+  
+  // Shift every element left by one position
+  int i;
+  for (i = 0; i < instr_queue_size - 1; i++) {
+      instr_queue[i] = instr_queue[i + 1];
+  }
+  instr_queue[instr_queue_size - 1] = NULL; // Clear the last element after shifting
+  instr_queue_size--;
+  return tmp;
+}
+
+static void instr_queue_push(instruction_t* insertEntry){
+  assert(instr_queue_size<INSTR_QUEUE_SIZE);
+  
+  instr_queue[instr_queue_size] = insertEntry; // Insert at the rear
+  instr_queue_size++;
+}
+
+static bool instr_queue_full(){
+  if (instr_queue_size >= INSTR_QUEUE_SIZE) { // Check if the queue is full
+    return false;
+  }
+    return true;
+}
+
+static instruction_t* FDPipelineReg = NULL;
+
+/*ECE552 LAB3 END*/
+
 //reservation stations (each reservation station entry contains a pointer to an instruction)
 static instruction_t* reservINT[RESERV_INT_SIZE];
 static instruction_t* reservFP[RESERV_FP_SIZE];
@@ -142,7 +176,31 @@ static bool is_simulation_done(counter_t sim_insn) {
 void CDB_To_retire(int current_cycle) {
 
   /* ECE552: YOUR CODE GOES HERE */
+  instruction_t* boardcast = commonDataBus;
+  commonDataBus = NULL;
 
+  // BroadCast Map Table
+  int i, j;
+  for(i=0; i < MD_TOTAL_REGS; i++){
+    if(map_table[i]==boardcast)
+      map_table[i] = NULL;
+  }
+  
+  // BroadCast RS
+  for(i=0; i < RESERV_INT_SIZE; i++){
+    for(j=0; j<3; j++){
+      if(reservINT[i]->Q[j]==boardcast)
+        reservINT[i]->Q[j] = NULL;
+    }
+  }
+  for(i=0; i < RESERV_FP_SIZE; i++){
+    for(j=0; j<3; j++){
+      if(reservFP[i]->Q[j]==boardcast)
+        reservFP[i]->Q[j] = NULL;
+    }
+  }
+
+  // Do we need to free instruction_t* boardcast?
 }
 
 
@@ -186,6 +244,8 @@ void issue_To_execute(int current_cycle) {
 void dispatch_To_issue(int current_cycle) {
 
   /* ECE552: YOUR CODE GOES HERE */
+
+
 }
 
 void update_Fetch_index(instruction_trace_t* trace){
@@ -211,7 +271,10 @@ void fetch(instruction_trace_t* trace) {
   /* ECE552: YOUR CODE GOES HERE */
     // Propose: update fetch_index and push Instr to IFQ
 
-    // Check if instr Operation is Trap
+    // Check IFQ Full
+    if(instr_queue_full()) return;
+
+    // Check if instr Operation is Trap, get next Instr
     instruction_t* instr = &(trace->table[fetch_index % INSTR_TRACE_SIZE]);
     assert(instr == NULL);
     while(IS_TRAP(instr->op)){
@@ -221,7 +284,7 @@ void fetch(instruction_trace_t* trace) {
     }
 
     // Push Instr to IFQ
-    
+    instr_queue_push(instr);
 }
 
 /* 
@@ -235,10 +298,21 @@ void fetch(instruction_trace_t* trace) {
  */
 void fetch_To_dispatch(instruction_trace_t* trace, int current_cycle) {
 
-  fetch(trace);
-
   /* ECE552: YOUR CODE GOES HERE */
+  if(FDPipelineReg == NULL){ // Capture RS Full Structural Hazard
+    FDPipelineReg = instr_queue_pop();
+    FDPipelineReg->tom_dispatch_cycle = current_cycle;
 
+    // instr pop is Condi/Uncondi Branch
+    if(IS_COND_CTRL(FDPipelineReg->op) || IS_UNCOND_CTRL(FDPipelineReg->op)){
+      FDPipelineReg = NULL;
+      FDPipelineReg->tom_issue_cycle = 0;
+      FDPipelineReg->tom_execute_cycle = 0;
+      FDPipelineReg->tom_cdb_cycle = 0;
+    }
+  }
+
+  fetch(trace);
 }
 
 /* 
@@ -291,15 +365,16 @@ counter_t runTomasulo(instruction_trace_t* trace)
 
      /* ECE552: YOUR CODE GOES HERE */
 
-    // fetch_To_dispatch(trace, cycle)
+    CDB_To_retire(cycle);
 
-    // dispatch_To_issue(cycle)
+    execute_To_CDB(cycle);
 
-    // issue_To_execute(cycle)
+    issue_To_execute(cycle);
 
-    // execute_To_CDB(cycle)
+    dispatch_To_issue(cycle);
 
-    // CDB_To_retire(cycle)
+    fetch_To_dispatch(trace, cycle);
+
 
      cycle++;
 

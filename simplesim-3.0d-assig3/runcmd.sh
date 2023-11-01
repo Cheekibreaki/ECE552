@@ -7,3 +7,7 @@ echo "----------------------------------------------------"
 cat go.simout
 echo "----------------------------------------------------"
 echo "go.simout end"
+
+make clean && make
+gdb sim-safe
+run -max:inst 10000 -redir:sim gcc.simout /cad2/ece552f/benchmarks/gcc.eio

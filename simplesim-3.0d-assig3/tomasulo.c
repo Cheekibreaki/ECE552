@@ -85,9 +85,8 @@ static int instr_queue_size = 0;
 
 /*ECE552 Assignment 3 - BEGIN*/
 static instruction_t* instr_queue_pop(){
-  assert(instr_queue_size != 0);
   instruction_t* tmp = instr_queue[0]; // Pop from the front
-  
+  if(tmp == NULL) return NULL; 
   // Shift every element left by one position
   int i;
   for (i = 0; i < instr_queue_size - 1; i++) {
@@ -100,16 +99,22 @@ static instruction_t* instr_queue_pop(){
 
 static void instr_queue_push(instruction_t* insertEntry){
   assert(instr_queue_size<INSTR_QUEUE_SIZE);
-  
+
+  printf("Instr into IFQ %p\n", insertEntry);
+  printf("Instr into Idx %d\n", instr_queue_size);
   instr_queue[instr_queue_size] = insertEntry; // Insert at the rear
+  printf("Instr IFQ res %p\n", instr_queue[instr_queue_size]);
+
   instr_queue_size++;
+  printf("Instr into Idx %d\n", instr_queue_size);
+
 }
 
 static bool instr_queue_full(){
   if (instr_queue_size >= INSTR_QUEUE_SIZE) { // Check if the queue is full
-    return false;
-  }
     return true;
+  }
+  return false;
 }
 
 static instruction_t* FDPipelineReg = NULL;
@@ -197,13 +202,13 @@ void CDB_To_retire(int current_cycle) {
   // BroadCast RS
   for(i=0; i < RESERV_INT_SIZE; i++){
     for(j=0; j<3; j++){
-      if(reservINT[i]->Q[j]==boardcast)
+      if(reservINT[i] != NULL && reservINT[i]->Q[j]==boardcast)
         reservINT[i]->Q[j] = NULL;
     }
   }
   for(i=0; i < RESERV_FP_SIZE; i++){
     for(j=0; j<3; j++){
-      if(reservFP[i]->Q[j]==boardcast)
+      if(reservFP[i] != NULL && reservFP[i]->Q[j]==boardcast)
         reservFP[i]->Q[j] = NULL;
     }
   }
@@ -256,13 +261,12 @@ void cleanInstr(instruction_t* instrFinished){
 void execute_To_CDB(int current_cycle) {
 
   /* ECE552: YOUR CODE GOES HERE */
-  assert(commonDataBus != NULL);
   int i;
 
   instruction_t* instrOldest=NULL;
   instruction_t* instrCurr=NULL;
   for(i=0; i < FU_INT_SIZE; i++){
-    if((current_cycle - fuINT[i]->tom_execute_cycle) >= FU_INT_LATENCY){
+    if(fuINT[i] != NULL && (current_cycle - fuINT[i]->tom_execute_cycle) >= FU_INT_LATENCY){
       instrCurr = fuINT[i];
 
       // Store Case, doesnot go into CDB
@@ -279,7 +283,7 @@ void execute_To_CDB(int current_cycle) {
     }
   }
   for(i=0; i < FU_FP_SIZE; i++){
-    if((current_cycle - fuFP[i]->tom_execute_cycle) >= FU_FP_LATENCY){
+    if(fuFP[i] != NULL && (current_cycle - fuFP[i]->tom_execute_cycle) >= FU_FP_LATENCY){
       instrCurr = fuFP[i];
       
       // Check CDB RaceCondi
@@ -290,6 +294,7 @@ void execute_To_CDB(int current_cycle) {
   }
 
   // Update CDB & instr's cdb_cycle
+  if(instrOldest == NULL) return;
   commonDataBus = instrOldest;
   instrOldest->tom_cdb_cycle = current_cycle;
   cleanInstr(instrOldest);
@@ -297,14 +302,26 @@ void execute_To_CDB(int current_cycle) {
 
 
 // able to Execute
-static instruction_t* readyRSINT[RESERV_INT_SIZE];
 static instruction_t* readyRSFP[RESERV_FP_SIZE];
+static instruction_t* readyRSINT[RESERV_INT_SIZE];
 
 // sort function by array[i]->index
 void sortReadyRS(instruction_t* readyRS[], int size){
+  
   int i, j;
-  for (i = 0; i < size - 1; i++){
-    for (j = 0; j < size - i - 1; j++){
+  int last_index = 0;
+  for( i = 0 ; i < size; i++){
+    if(readyRS[i] == NULL){
+      last_index = i;
+      break;
+    }
+  }
+
+  for (i = 0; i < last_index; i++){
+    for (j = 0; j < last_index - i - 1; j++){
+     
+      assert(readyRS[j]!= NULL);
+      assert(readyRS[j+1]!= NULL);
       if(readyRS[j]->index > readyRS[j+1]->index){
         instruction_t * temp = readyRS[j];
         readyRS[j] = readyRS[j+1];
@@ -355,19 +372,21 @@ void issue_To_execute(int current_cycle) {
   bool isready;
   for(i=0; i < RESERV_FP_SIZE; i++){
     isready = true;
-    for(j = 0; i < 3; j++){
-      if(reservFP[i]->Q[j] != NULL){
+    
+    for(j = 0; j < 3; j++){
+      if(reservFP[i] != NULL && reservFP[i]->Q[j] != NULL){
         isready = false;
         break;
       }
     }
+    
     if(isready) pushReadyRS(readyRSFP, reservFP[i], RESERV_FP_SIZE);
   }
 
   for(i=0; i < RESERV_INT_SIZE; i++){
     isready = true;
-    for(j = 0; i < 3; j++){
-      if(reservINT[i]->Q[j] != NULL){
+    for(j = 0; j < 3; j++){
+      if(reservINT[i] != NULL && reservINT[i]->Q[j] != NULL){
         isready = false;
         break;
       }
@@ -378,7 +397,6 @@ void issue_To_execute(int current_cycle) {
   sortReadyRS(readyRSFP, RESERV_FP_SIZE);
   sortReadyRS(readyRSINT, RESERV_INT_SIZE);
   
-
   // Update FU and instr execute_cycle
   i = 0;
   while(readyRSINT[i]!=NULL){
@@ -429,6 +447,8 @@ void dispatch_To_issue(int current_cycle) {
 
   /* ECE552: YOUR CODE GOES HERE */
   
+  if(FDPipelineReg == NULL) return;
+
   // get from FDPipelineReg put into RS branch, INT->USES_INT_FU, FP->USES_FP_FU
   // update instr's issue_cycle
   if(USES_INT_FU(FDPipelineReg->op)){
@@ -478,7 +498,7 @@ void fetch(instruction_trace_t* trace) {
 
     // Check if instr Operation is Trap, get next Instr
     instruction_t* instr = &(trace->table[fetch_index % INSTR_TRACE_SIZE]);
-    assert(instr == NULL);
+    assert(instr != NULL);
     while(IS_TRAP(instr->op)){
       update_Fetch_index(trace);
       instr = &(trace->table[fetch_index % INSTR_TRACE_SIZE]);
@@ -486,6 +506,7 @@ void fetch(instruction_trace_t* trace) {
     }
 
     // Push Instr to IFQ
+    update_Fetch_index(trace);
     instr_queue_push(instr);
 }
 
@@ -499,22 +520,23 @@ void fetch(instruction_trace_t* trace) {
  * 	None
  */
 void fetch_To_dispatch(instruction_trace_t* trace, int current_cycle) {
+  fetch(trace);
 
   /* ECE552: YOUR CODE GOES HERE */
   if(FDPipelineReg == NULL){ // Capture RS Full Structural Hazard
     FDPipelineReg = instr_queue_pop();
-    FDPipelineReg->tom_dispatch_cycle = current_cycle;
+    if(FDPipelineReg != NULL){
+      FDPipelineReg->tom_dispatch_cycle = current_cycle;
 
-    // instr pop is Condi/Uncondi Branch
-    if(IS_COND_CTRL(FDPipelineReg->op) || IS_UNCOND_CTRL(FDPipelineReg->op)){
-      FDPipelineReg = NULL;
-      FDPipelineReg->tom_issue_cycle = 0;
-      FDPipelineReg->tom_execute_cycle = 0;
-      FDPipelineReg->tom_cdb_cycle = 0;
+      // instr pop is Condi/Uncondi Branch
+      if(IS_COND_CTRL(FDPipelineReg->op) || IS_UNCOND_CTRL(FDPipelineReg->op)){
+        FDPipelineReg = NULL;
+        FDPipelineReg->tom_issue_cycle = 0;
+        FDPipelineReg->tom_execute_cycle = 0;
+        FDPipelineReg->tom_cdb_cycle = 0;
+      }
     }
   }
-
-  fetch(trace);
 }
 
 /* 
@@ -543,6 +565,14 @@ counter_t runTomasulo(instruction_trace_t* trace)
   for(i = 0; i < RESERV_FP_SIZE; i++) {
       reservFP[i] = NULL;
   }
+  
+  for (i = 0; i < RESERV_INT_SIZE; i++) {
+      readyRSINT[i] = NULL;
+  }
+
+  for(i = 0; i < RESERV_FP_SIZE; i++) {
+      readyRSFP[i] = NULL;
+  }
 
   //initialize functional units
   for (i = 0; i < FU_INT_SIZE; i++) {
@@ -566,19 +596,22 @@ counter_t runTomasulo(instruction_trace_t* trace)
   while (true) {
 
      /* ECE552: YOUR CODE GOES HERE */
-
     CDB_To_retire(cycle);
 
     execute_To_CDB(cycle);
 
     issue_To_execute(cycle);
+    
 
     dispatch_To_issue(cycle);
 
     fetch_To_dispatch(trace, cycle);
 
-    cycle++;
+    print_all_instr(trace, 10);
+    printf("\n\n\n");
 
+    cycle++;
+    
     if (is_simulation_done(sim_num_insn))
       break;
   }

@@ -9,7 +9,7 @@
 #include "instr.h"
 
 //prints a single instruction
-static void print_tom_instr(instruction_t* instr) {
+void print_tom_instr(instruction_t* instr) {
 
   md_print_insn(instr->inst, instr->pc, stdout);
   myfprintf(stdout, "\t%d\t%d\t%d\t%d\n", 

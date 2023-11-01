@@ -100,18 +100,19 @@ static instruction_t* instr_queue_pop(){
 static void instr_queue_push(instruction_t* insertEntry){
   assert(instr_queue_size<INSTR_QUEUE_SIZE);
 
-  printf("Instr into IFQ %p\n", insertEntry);
-  printf("Instr into Idx %d\n", instr_queue_size);
   instr_queue[instr_queue_size] = insertEntry; // Insert at the rear
-  printf("Instr IFQ res %p\n", instr_queue[instr_queue_size]);
-
   instr_queue_size++;
-  printf("Instr into Idx %d\n", instr_queue_size);
-
 }
 
 static bool instr_queue_full(){
   if (instr_queue_size >= INSTR_QUEUE_SIZE) { // Check if the queue is full
+    return true;
+  }
+  return false;
+}
+
+static bool instr_queue_empty(){
+  if (instr_queue_size == 0) { // Check if the queue is full
     return true;
   }
   return false;
@@ -158,11 +159,11 @@ static bool is_simulation_done(counter_t sim_insn) {
   /* ECE552: YOUR CODE GOES HERE */
 
   // Check IFQ
-  int i;
-  for (i=0; i < INSTR_QUEUE_SIZE; i++ ){
-    if(instr_queue[i]!= NULL) return false;
-  }
+  int i;  
+  if(!instr_queue_empty()) return false;
   
+  if(FDPipelineReg != NULL) return false;
+
   // Check RS
   for(i=0; i < RESERV_INT_SIZE; i++){
     if(reservINT[i] != NULL) return false;
@@ -270,7 +271,7 @@ void execute_To_CDB(int current_cycle) {
       instrCurr = fuINT[i];
 
       // Store Case, doesnot go into CDB
-      if(IS_STORE(instrCurr->op)) {
+      if(!WRITES_CDB(instrCurr->op)) {
         instrCurr->tom_cdb_cycle = 0;
         cleanInstr(instrCurr);
         continue;
@@ -466,16 +467,19 @@ void dispatch_To_issue(int current_cycle) {
       FDPipelineReg = NULL;
     }
   }else{
+    assert(!IS_TRAP(FDPipelineReg->op));
+    assert(!IS_COND_CTRL(FDPipelineReg->op));
+    assert(!IS_UNCOND_CTRL(FDPipelineReg->op));
     assert(false);
   }
 }
 
 void update_Fetch_index(instruction_trace_t* trace){
   fetch_index++;
-  assert(fetch_index <= sim_num_insn);
 
-  if (!fetch_index % INSTR_TRACE_SIZE)
+  if (!fetch_index % INSTR_TRACE_SIZE){
     trace = trace->next;
+  }
 
   assert(trace != NULL);
 }
@@ -500,14 +504,23 @@ void fetch(instruction_trace_t* trace) {
     instruction_t* instr = &(trace->table[fetch_index % INSTR_TRACE_SIZE]);
     assert(instr != NULL);
     while(IS_TRAP(instr->op)){
+      printf("From IS_TRAP: ");
+      print_tom_instr(instr);
       update_Fetch_index(trace);
       instr = &(trace->table[fetch_index % INSTR_TRACE_SIZE]);
-      assert(instr == NULL);
+      assert(instr != NULL);
     }
-
+    
+    print_tom_instr(instr);
+    printf("fetch idx: %d %d\n", fetch_index, (fetch_index % INSTR_TRACE_SIZE));
+    
     // Push Instr to IFQ
     update_Fetch_index(trace);
     instr_queue_push(instr);
+    instr->tom_dispatch_cycle = 0;
+    instr->tom_issue_cycle = 0;
+    instr->tom_execute_cycle = 0;
+    instr->tom_cdb_cycle = 0;
 }
 
 /* 
@@ -531,9 +544,6 @@ void fetch_To_dispatch(instruction_trace_t* trace, int current_cycle) {
       // instr pop is Condi/Uncondi Branch
       if(IS_COND_CTRL(FDPipelineReg->op) || IS_UNCOND_CTRL(FDPipelineReg->op)){
         FDPipelineReg = NULL;
-        FDPipelineReg->tom_issue_cycle = 0;
-        FDPipelineReg->tom_execute_cycle = 0;
-        FDPipelineReg->tom_cdb_cycle = 0;
       }
     }
   }
@@ -602,13 +612,12 @@ counter_t runTomasulo(instruction_trace_t* trace)
 
     issue_To_execute(cycle);
     
-
     dispatch_To_issue(cycle);
 
     fetch_To_dispatch(trace, cycle);
 
-    print_all_instr(trace, 10);
-    printf("\n\n\n");
+    // print_all_instr(trace, 10);
+    // printf("\n\n\n");
 
     cycle++;
     

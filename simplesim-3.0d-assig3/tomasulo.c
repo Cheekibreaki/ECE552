@@ -467,21 +467,19 @@ void dispatch_To_issue(int current_cycle) {
       FDPipelineReg = NULL;
     }
   }else{
-    assert(!IS_TRAP(FDPipelineReg->op));
-    assert(!IS_COND_CTRL(FDPipelineReg->op));
-    assert(!IS_UNCOND_CTRL(FDPipelineReg->op));
     assert(false);
   }
 }
-
-void update_Fetch_index(instruction_trace_t* trace){
+int update_Fetch_index(instruction_trace_t** trace_ptr){
   fetch_index++;
-
-  if (!fetch_index % INSTR_TRACE_SIZE){
-    trace = trace->next;
+  if (fetch_index > (*trace_ptr) -> size)
+    return -1;
+  if (!(fetch_index % INSTR_TRACE_SIZE)){
+    *trace_ptr = (*trace_ptr)->next;
+    fetch_index = 0;
   }
-
-  assert(trace != NULL);
+  assert((*trace_ptr) != NULL);
+  return 0;
 }
 
 /* 
@@ -492,7 +490,7 @@ void update_Fetch_index(instruction_trace_t* trace){
  * Returns:
  * 	None
  */
-void fetch(instruction_trace_t* trace) {
+void fetch(instruction_trace_t** trace_ptr) {
 
   /* ECE552: YOUR CODE GOES HERE */
     // Propose: update fetch_index and push Instr to IFQ
@@ -501,21 +499,17 @@ void fetch(instruction_trace_t* trace) {
     if(instr_queue_full()) return;
 
     // Check if instr Operation is Trap, get next Instr
-    instruction_t* instr = &(trace->table[fetch_index % INSTR_TRACE_SIZE]);
+    instruction_t* instr = &((*trace_ptr)->table[fetch_index]);
+
     assert(instr != NULL);
     while(IS_TRAP(instr->op)){
-      printf("From IS_TRAP: ");
-      print_tom_instr(instr);
-      update_Fetch_index(trace);
-      instr = &(trace->table[fetch_index % INSTR_TRACE_SIZE]);
+      if(update_Fetch_index(trace_ptr) == -1) return;
+      instr = &((*trace_ptr)->table[fetch_index]);
       assert(instr != NULL);
     }
-    
-    print_tom_instr(instr);
-    printf("fetch idx: %d %d\n", fetch_index, (fetch_index % INSTR_TRACE_SIZE));
-    
+
     // Push Instr to IFQ
-    update_Fetch_index(trace);
+    if (update_Fetch_index(trace_ptr) == -1) return;
     instr_queue_push(instr);
     instr->tom_dispatch_cycle = 0;
     instr->tom_issue_cycle = 0;
@@ -532,8 +526,8 @@ void fetch(instruction_trace_t* trace) {
  * Returns:
  * 	None
  */
-void fetch_To_dispatch(instruction_trace_t* trace, int current_cycle) {
-  fetch(trace);
+void fetch_To_dispatch(instruction_trace_t** trace_ptr, int current_cycle) {
+  fetch(trace_ptr);
 
   /* ECE552: YOUR CODE GOES HERE */
   if(FDPipelineReg == NULL){ // Capture RS Full Structural Hazard
@@ -603,6 +597,7 @@ counter_t runTomasulo(instruction_trace_t* trace)
   fetch_index = 1;
 
   int cycle = 1;
+
   while (true) {
 
      /* ECE552: YOUR CODE GOES HERE */
@@ -614,7 +609,7 @@ counter_t runTomasulo(instruction_trace_t* trace)
     
     dispatch_To_issue(cycle);
 
-    fetch_To_dispatch(trace, cycle);
+    fetch_To_dispatch(&trace, cycle);
 
     // print_all_instr(trace, 10);
     // printf("\n\n\n");

@@ -10,4 +10,4 @@ make sim-safe
 
 # make clean && make
 # gdb sim-safe
-# run -max:inst 10000 -redir:sim gcc.simout /cad2/ece552f/benchmarks/gcc.eio
+# run -max:inst 100 -redir:sim gcc.simout /cad2/ece552f/benchmarks/gcc.eio

@@ -23,7 +23,7 @@
 
 /* PARAMETERS OF THE TOMASULO'S ALGORITHM */
 
-#define INSTR_QUEUE_SIZE         16 
+#define INSTR_QUEUE_SIZE         16
 
 #define RESERV_INT_SIZE    5
 #define RESERV_FP_SIZE     3
@@ -102,22 +102,6 @@ static void instr_queue_push(instruction_t* insertEntry){
   instr_queue_size++;
 }
 
-static bool instr_queue_full(){
-  if (instr_queue_size >= INSTR_QUEUE_SIZE) { // Check if the queue is full
-    return true;
-  }
-  return false;
-}
-
-static bool instr_queue_empty(){
-  if (instr_queue_size == 0) { // Check if the queue is full
-    return true;
-  }
-  return false;
-}
-
-static instruction_t* FDPipelineReg = NULL;
-
 /*ECE552 Assignment 3 - END*/
 
 //reservation stations (each reservation station entry contains a pointer to an instruction)
@@ -127,7 +111,6 @@ static instruction_t* reservFP[RESERV_FP_SIZE];
 //functional units
 static instruction_t* fuINT[FU_INT_SIZE];
 static instruction_t* fuFP[FU_FP_SIZE];
-
 
 //common data bus
 static instruction_t* commonDataBus = NULL;
@@ -162,7 +145,7 @@ static bool is_simulation_done(counter_t sim_insn) {
 
   // Check IFQ
   int i;  
-  if(!instr_queue_empty()) return false;
+  if(instr_queue_size != 0) return false;
   
   // Check RS
   for(i=0; i < RESERV_INT_SIZE; i++){
@@ -309,50 +292,6 @@ void execute_To_CDB(int current_cycle) {
   cleanInstr(instrOldest);
 }
 
-// sort function by array[i]->index
-void sortReadyRS(instruction_t* readyRS[], int size){
-  
-  int i, j;
-  int last_index = 0;
-  for( i = 0 ; i < size; i++){
-    if(readyRS[i] == NULL){
-      last_index = i;
-      break;
-    }
-  }
-
-  for (i = 0; i < last_index; i++){
-    for (j = 0; j < last_index - i - 1; j++){
-     
-      assert(readyRS[j]!= NULL);
-      assert(readyRS[j+1]!= NULL);
-      if(readyRS[j]->index > readyRS[j+1]->index){
-        instruction_t * temp = readyRS[j];
-        readyRS[j] = readyRS[j+1];
-        readyRS[j+1] = temp;
-      }
-    }
-  }
-}
-
-// clean array
-void cleanReadyRS(instruction_t* readyRS[], int size){
-  int i;
-  for (i = 0; i < size; i++) {
-      readyRS[i] = NULL;
-  }
-}
-// push array
-void pushReadyRS(instruction_t* readyRS[], instruction_t* instr, int size){
-  int i;
-  for (i = 0; i < size; i++) {
-      if (readyRS[i] == NULL) {
-          readyRS[i] = instr;
-          return;
-      }
-  }
-}
-
 /* 
  * Description: 
  * 	Moves instruction(s) from the issue to the execute stage (if possible). We prioritize old instructions
@@ -367,80 +306,60 @@ void issue_To_execute(int current_cycle) {
 
   /* ECE552: YOUR CODE GOES HERE */
 
-  cleanReadyRS(readyRSFP, RESERV_FP_SIZE);
-  cleanReadyRS(readyRSINT, RESERV_INT_SIZE);
-  
-  // check if RS Entry has Empty Q[3] && FU structural Hazard
-  // deal with RS Entry RaceCondi
   int i, j;
-  bool isready;
-  for(i=0; i < RESERV_FP_SIZE; i++){
-    if(reservFP[i] == NULL) continue;
+  instruction_t* currInstr = NULL;
+  instruction_t* oldestInstr = NULL;
 
-    // skip if current RS Entry not issued
-    if(reservFP[i]->tom_issue_cycle == 0) continue;
+  for(i = 0; i < FU_FP_SIZE; i++){
+    if (fuFP[i] == NULL) {
+      
+      oldestInstr = NULL;
+      for(j = 0; j < RESERV_FP_SIZE; j++){
+        currInstr = reservFP[j];
 
-    // skip if current RS Entry already in FU
-    if(reservFP[i]->tom_execute_cycle != 0) continue;
-    
-    // Check current RS Entry Q[3] is Empty
-    isready = true;
-    for(j = 0; j < 3; j++){
-      if(reservFP[i]->Q[j] != NULL){
-        isready = false;
-        break;
+        if(currInstr == NULL) continue;
+
+        // skip if current RS Entry already in FU
+        if(currInstr->tom_execute_cycle != 0) continue;
+        
+        // Check current RS Entry Q[3] is Empty
+        if(currInstr->Q[0] != NULL || currInstr->Q[1] != NULL || currInstr->Q[2] != NULL) 
+          continue;
+        
+        if(oldestInstr == NULL || oldestInstr->index > currInstr->index)
+          oldestInstr = currInstr;
       }
+
+      if(oldestInstr == NULL) break;
+      oldestInstr->tom_execute_cycle = current_cycle;
+      fuFP[i] = oldestInstr;
     }
-    
-    if(isready) pushReadyRS(readyRSFP, reservFP[i], RESERV_FP_SIZE);
   }
 
-  for(i=0; i < RESERV_INT_SIZE; i++){
-    if(reservINT[i] == NULL) continue;
+  for(i = 0; i < FU_INT_SIZE; i++){
+    if (fuINT[i] == NULL) {
+      
+      oldestInstr = NULL;
+      for(j = 0; j < RESERV_INT_SIZE; j++){
+        currInstr = reservINT[j];
 
-    // skip if current RS Entry not issued
-    if(reservINT[i]->tom_issue_cycle == 0) continue;
+        if(currInstr == NULL) continue;
 
-    // skip if current RS Entry already in FU
-    if(reservINT[i]->tom_execute_cycle != 0) continue;
-
-    // Check current RS Entry Q[3] is Empty
-    isready = true;
-    for(j = 0; j < 3; j++){
-      if(reservINT[i]->Q[j] != NULL){
-        isready = false;
-        break;
+        // skip if current RS Entry already in FU
+        if(currInstr->tom_execute_cycle != 0) continue;
+        
+        // Check current RS Entry Q[3] is Empty
+        if(currInstr->Q[0] != NULL || currInstr->Q[1] != NULL || currInstr->Q[2] != NULL) 
+          continue;
+        
+        if(oldestInstr == NULL || oldestInstr->index > currInstr->index)
+          oldestInstr = currInstr;
       }
-    }
-    if(isready) pushReadyRS(readyRSINT, reservINT[i], RESERV_INT_SIZE);
-  }
 
-  sortReadyRS(readyRSFP, RESERV_FP_SIZE);
-  sortReadyRS(readyRSINT, RESERV_INT_SIZE);
-  
-  // Push Ready RSEntry into FU and Update instr execute_cycle
-  i = 0;
-  while(readyRSINT[i]!=NULL){
-    for(j=0; j < FU_INT_SIZE; j++){
-      if(fuINT[j]==NULL){
-        fuINT[j] = readyRSINT[i];
-        fuINT[j]->tom_execute_cycle = current_cycle;
-        break;
-      }
+      if(oldestInstr == NULL) break;
+      oldestInstr->tom_execute_cycle = current_cycle;
+      fuINT[i] = oldestInstr;
     }
-    i++;
-  }
-
-  i = 0;
-  while(readyRSFP[i]!=NULL){
-    for(j=0; j < FU_FP_SIZE; j++){
-      if(fuFP[j]==NULL){
-        fuFP[j] =  readyRSFP[i];
-        fuFP[j] -> tom_execute_cycle = current_cycle;
-        break;
-      }
-    }
-    i++;
   }
 }
 
@@ -535,7 +454,7 @@ int update_Fetch_index(instruction_trace_t** trace_ptr){
 void fetch(instruction_trace_t** trace_ptr, int current_cycle) {
 
   /* ECE552: YOUR CODE GOES HERE */
-    if(instr_queue_full()) return;
+    if(instr_queue_size >= INSTR_QUEUE_SIZE) return;
     
     // Check if instr Operation is Trap, get next Instr
     instruction_t* instr = &((*trace_ptr)->table[fetch_index]);
@@ -569,8 +488,6 @@ void fetch_To_dispatch(instruction_trace_t** trace_ptr, int current_cycle) {
   fetch(trace_ptr, current_cycle);
 
   /* ECE552: YOUR CODE GOES HERE */
-
-  assert(FDPipelineReg == NULL);
 }
 
 static instruction_trace_t* traceDebug;

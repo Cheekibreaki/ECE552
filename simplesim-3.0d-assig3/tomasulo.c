@@ -564,7 +564,7 @@ counter_t runTomasulo(instruction_trace_t* trace)
 
     fetch_To_dispatch(&trace, cycle);
 
-    print_all_instr(trace, 50);
+    // print_all_instr(trace, 50);
     // printf("\n\n\n");
     if (is_simulation_done(sim_num_insn))
       break;

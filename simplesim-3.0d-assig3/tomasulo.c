@@ -145,7 +145,9 @@ static bool is_simulation_done(counter_t sim_insn) {
 
   // Check IFQ
   int i;  
-  if(instr_queue_size != 0) return false;
+  if(instr_queue_size != 0){
+    return false;
+  } 
   
   // Check RS
   for(i=0; i < RESERV_INT_SIZE; i++){
@@ -564,11 +566,12 @@ counter_t runTomasulo(instruction_trace_t* trace)
 
     // print_all_instr(trace, 50);
     // printf("\n\n\n");
+    if (is_simulation_done(sim_num_insn))
+      break;
 
     cycle++;
     
-    if (is_simulation_done(sim_num_insn))
-      break;
+    
   }
   // print_all_instr(traceDebug, sim_num_insn);
   return cycle;

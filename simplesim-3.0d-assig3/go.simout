@@ -8,7 +8,7 @@ of SimpleScalar, LLC (info@simplescalar.com).
 sim: loading EIO file: /cad2/ece552f/benchmarks/go.eio
 sim: command line: ./sim-safe -max:inst 1000000 -redir:sim go.simout -redir:prog go.progout /cad2/ece552f/benchmarks/go.eio 
 
-sim: simulation started @ Wed Nov  1 21:55:53 2023, options follow:
+sim: simulation started @ Wed Nov  1 22:48:16 2023, options follow:
 
 sim-safe: This simulator implements a functional simulator.  This
 functional simulator is the simplest, most user-friendly simulator in the
@@ -37,7 +37,7 @@ sim_num_insn                1000000 # total number of instructions executed
 sim_num_refs                 236033 # total number of loads and stores executed
 sim_elapsed_time                  1 # total simulation time in seconds
 sim_inst_rate          1000000.0000 # simulation speed (in insts/sec)
-sim_num_tom_cycles          1790990 # total number of cycles with tomasulo
+sim_num_tom_cycles          1695047 # total number of cycles with tomasulo
 ld_text_base             0x00400000 # program text (code) segment base
 ld_text_size                 621600 # program text (code) size in bytes
 ld_data_base             0x10000000 # program initialized data segment base

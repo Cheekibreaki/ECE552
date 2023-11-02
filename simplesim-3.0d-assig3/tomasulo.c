@@ -466,21 +466,44 @@ int returnRSfreeIndex (instruction_t * rs[], int size){
 void dispatch_To_issue(int current_cycle) {
 
   /* ECE552: YOUR CODE GOES HERE */
-  
-  if(FDPipelineReg == NULL) return;
+  instruction_t* instr_head = instr_queue[0];
+  if(instr_head == NULL) return;
 
-  if(!IS_COND_CTRL(FDPipelineReg->op) && !IS_UNCOND_CTRL(FDPipelineReg->op)){
-    // Update RSEntry Q with MapTable
-    if(FDPipelineReg->r_in[0]!=DNA) FDPipelineReg->Q[0] = map_table[FDPipelineReg->r_in[0]];
-    if(FDPipelineReg->r_in[1]!=DNA) FDPipelineReg->Q[1] = map_table[FDPipelineReg->r_in[1]];
-    if(FDPipelineReg->r_in[2]!=DNA) FDPipelineReg->Q[2] = map_table[FDPipelineReg->r_in[2]];
-    
-    // Update MapTable with RSEntry Out
-    if(FDPipelineReg->r_out[0]!=DNA) map_table[FDPipelineReg->r_out[0]] = FDPipelineReg;
-    if(FDPipelineReg->r_out[1]!=DNA) map_table[FDPipelineReg->r_out[1]] = FDPipelineReg;
+  enum md_opcode op_head = instr_head->op;
+  
+  if(USES_INT_FU(op_head)){
+    int ret = returnRSfreeIndex(reservINT, RESERV_INT_SIZE);
+    if(ret == -1) return;
+
+    instr_head = instr_queue_pop();
+    reservINT[ret] = instr_head;
   }
-  FDPipelineReg->tom_issue_cycle = current_cycle;
-  FDPipelineReg = NULL;
+  else if(USES_FP_FU(op_head)){
+    int ret = returnRSfreeIndex(reservFP, RESERV_FP_SIZE);
+    if(ret == -1) return;
+
+    instr_head = instr_queue_pop();
+    reservFP[ret] = instr_head;
+  }
+  else if (IS_COND_CTRL(op_head) || IS_UNCOND_CTRL(op_head)){
+    instr_head = instr_queue_pop();
+    instr_head->tom_issue_cycle = current_cycle;
+    return;
+  }
+  else{
+    assert(false);
+  }
+
+  // Update RSEntry Q with MapTable
+  if(instr_head->r_in[0]!=DNA) instr_head->Q[0] = map_table[instr_head->r_in[0]];
+  if(instr_head->r_in[1]!=DNA) instr_head->Q[1] = map_table[instr_head->r_in[1]];
+  if(instr_head->r_in[2]!=DNA) instr_head->Q[2] = map_table[instr_head->r_in[2]];
+  
+  // Update MapTable with RSEntry Out
+  if(instr_head->r_out[0]!=DNA) map_table[instr_head->r_out[0]] = instr_head;
+  if(instr_head->r_out[1]!=DNA) map_table[instr_head->r_out[1]] = instr_head;
+  
+  instr_head->tom_issue_cycle = current_cycle;
 }
 
 
@@ -509,7 +532,7 @@ int update_Fetch_index(instruction_trace_t** trace_ptr){
  * Returns:
  * 	None
  */
-void fetch(instruction_trace_t** trace_ptr) {
+void fetch(instruction_trace_t** trace_ptr, int current_cycle) {
 
   /* ECE552: YOUR CODE GOES HERE */
     if(instr_queue_full()) return;
@@ -527,7 +550,7 @@ void fetch(instruction_trace_t** trace_ptr) {
     // Push Instr to IFQ, set all cycle to 0
     if (update_Fetch_index(trace_ptr) == -1) return;
     instr_queue_push(instr);
-    instr->tom_dispatch_cycle = 0;
+    instr->tom_dispatch_cycle = current_cycle;
     instr->tom_issue_cycle = 0;
     instr->tom_execute_cycle = 0;
     instr->tom_cdb_cycle = 0;
@@ -543,55 +566,11 @@ void fetch(instruction_trace_t** trace_ptr) {
  * 	None
  */
 void fetch_To_dispatch(instruction_trace_t** trace_ptr, int current_cycle) {
-  fetch(trace_ptr);
+  fetch(trace_ptr, current_cycle);
 
   /* ECE552: YOUR CODE GOES HERE */
 
   assert(FDPipelineReg == NULL);
-
-  instruction_t* instr_head = instr_queue[0];
-  if(instr_head == NULL) return;
-
-  enum md_opcode op_head = instr_head->op;
-  
-  if(USES_INT_FU(op_head)){
-    int ret = returnRSfreeIndex(reservINT, RESERV_INT_SIZE);
-    if(ret == -1) return;
-
-    // Save to FDTemporaryPosition
-    FDPipelineReg = instr_queue_pop();
-
-    // Save to RS
-    reservINT[ret] = FDPipelineReg;
-    
-    // Change Dispatch Stage
-    FDPipelineReg->tom_dispatch_cycle = current_cycle;
-  }
-  
-  else if(USES_FP_FU(op_head)){
-    int ret = returnRSfreeIndex(reservFP, RESERV_FP_SIZE);
-    if(ret == -1) return;
-
-    // Save to FDTemporaryPosition
-    FDPipelineReg = instr_queue_pop();
-
-    // Save to RS
-    reservFP[ret] = FDPipelineReg;
-    
-    // Change Dispatch Stage
-    FDPipelineReg->tom_dispatch_cycle = current_cycle;
-
-  }
-  else if (IS_COND_CTRL(op_head) || IS_UNCOND_CTRL(op_head)){
-    // Save to FDTemporaryPosition
-    FDPipelineReg = instr_queue_pop();
-
-    // change Dispatch Stage
-    FDPipelineReg->tom_dispatch_cycle = current_cycle;
-  }
-  else{
-    assert(false);
-  }
 }
 
 static instruction_trace_t* traceDebug;

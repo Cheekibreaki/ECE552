@@ -507,7 +507,8 @@ cache_reg_stats(struct cache_t *cp,	/* cache instance */
 
 /* Next Line Prefetcher */
 void next_line_prefetcher(struct cache_t *cp, md_addr_t addr) {
-	; 
+  // addr = addr + cp->bsize;
+  cache_access(cp, Read, addr, NULL, sizeof(md_addr_t), 0, NULL, NULL, 1); 
 }
 
 /* Open Ended Prefetcher */

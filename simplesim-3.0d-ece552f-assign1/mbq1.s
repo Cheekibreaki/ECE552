@@ -47,29 +47,31 @@ main:
 	li	$18,0x00000001		# 1
 	move	$19,$0
 	move	$22,$0
-	li	$23,0x000186a1		# 100001
+	li	$23,0x000186a0		# 100000
 	lw	$3,60($fp)
 	addu	$2,$3,4
 	lw	$4,0($2)
 	jal	atoi
 	move	$3,$2
 	subu	$2,$3,1
-	sltu	$3,$2,5
-	beq	$3,$0,$L24
+	sltu	$3,$2,7
+	beq	$3,$0,$L32
 	sll	$3,$2,2
-	la	$4,$L23
+	la	$4,$L31
 	addu	$2,$3,$4
 	lw	$3,0($2)
 	j	$3
 	.rdata
 	.align	3
 	.align	2
-$L23:
+$L31:
 	.word	$L3
 	.word	$L7
 	.word	$L11
 	.word	$L15
 	.word	$L19
+	.word	$L23
+	.word	$L27
 	.text
 $L3:
 	.set	noreorder
@@ -143,7 +145,7 @@ $L18:
 	addu	$17,$20,$21
 	addu	$19,$18,$20
 	addu	$21,$17,$20
-	addu	$17,$19,$20
+	addu	$17,$19,$21
 	addu	$22,$22,1
  #APP
 	nop
@@ -163,7 +165,8 @@ $L20:
 $L22:
 	addu	$17,$20,$21
 	addu	$19,$18,$20
-	addu	$21,$17,$19
+	addu	$21,$17,$20
+	addu	$17,$19,$20
 	addu	$22,$22,1
  #APP
 	nop
@@ -172,7 +175,47 @@ $L22:
 	j	$L20
 $L21:
 	j	$L2
+$L23:
+	.set	noreorder
+	nop
+	.set	reorder
 $L24:
+	slt	$2,$22,$23
+	bne	$2,$0,$L26
+	j	$L25
+$L26:
+	addu	$17,$20,$21
+	addu	$19,$18,$20
+	addu	$21,$17,$19
+	addu	$22,$22,1
+ #APP
+	nop
+	nop
+ #NO_APP
+	j	$L24
+$L25:
+	j	$L2
+$L27:
+	.set	noreorder
+	nop
+	.set	reorder
+$L28:
+	slt	$2,$22,$23
+	bne	$2,$0,$L30
+	j	$L29
+$L30:
+	addu	$17,$20,$21
+	addu	$19,$17,$20
+	addu	$21,$17,$19
+	addu	$22,$22,1
+ #APP
+	nop
+	nop
+ #NO_APP
+	j	$L28
+$L29:
+	j	$L2
+$L32:
 $L2:
 	move	$2,$0
 	j	$L1

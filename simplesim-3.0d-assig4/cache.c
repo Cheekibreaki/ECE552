@@ -507,8 +507,10 @@ cache_reg_stats(struct cache_t *cp,	/* cache instance */
 
 /* Next Line Prefetcher */
 void next_line_prefetcher(struct cache_t *cp, md_addr_t addr) {
-  // addr = addr + cp->bsize;
-  cache_access(cp, Read, addr, NULL, sizeof(md_addr_t), 0, NULL, NULL, 1); 
+  addr = CACHE_BADDR(cp,addr);
+  addr += cp->bsize;
+  if(cache_probe(cp, addr))
+    cache_access(cp, Read, addr, NULL, cp->bsize, 0, NULL, NULL, 1); 
 }
 
 /* Open Ended Prefetcher */
@@ -593,6 +595,8 @@ cache_access(struct cache_t *cp,	/* cache to access */
     *repl_addr = 0;
 
   /* check alignments */
+  assert((nbytes & (nbytes-1)) == 0);
+  assert((addr & (nbytes-1)) == 0);
   if ((nbytes & (nbytes-1)) != 0 || (addr & (nbytes-1)) != 0)
     fatal("cache: access error: bad size or alignment, addr 0x%08x", addr);
 

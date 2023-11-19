@@ -148,12 +148,14 @@ struct cache_set_t
 
 /* ECE552 Assignment 4 - BEGIN CODE*/
 /*Reference Preitor Table Entry*/
-struct rpt_entry{
+typedef struct{
   md_addr_t tag;
   md_addr_t prev_addr;
   md_addr_t stride;
   int state; 
-};
+}rpt_entry;
+
+static rpt_entry* rpt;
 /* ECE552 Assignment 4 - END CODE*/
 
 /* cache definition */
@@ -235,7 +237,7 @@ struct cache_t
 
 
   /* ECE552 Assignment 4 - BEGIN CODE*/
-  struct rpt_entry* rpt;
+  rpt_entry* rpt;
   /* ECE552 Assignment 4 - EN CODE*/
 };
 

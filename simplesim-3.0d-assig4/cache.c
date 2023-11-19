@@ -315,7 +315,7 @@ cache_create(char *name,		/* name of the cache */
   cp->hit_latency = hit_latency;
   cp->prefetch_type = prefetch_type;
   /* ECE552 Assignment 4 - BEGIN CODE*/
-  cp->rpt = (struct rpt_entry*)malloc(prefetch_type * sizeof(struct rpt_entry));;
+  cp->rpt = (rpt_entry*)malloc(prefetch_type * sizeof(rpt_entry));;
   int idx = 0;
   for(idx = 0; idx < prefetch_type; idx++){
     init_entry(&(cp->rpt[idx]));
@@ -520,7 +520,7 @@ cache_reg_stats(struct cache_t *cp,	/* cache instance */
 void next_line_prefetcher(struct cache_t *cp, md_addr_t addr) {
   addr = CACHE_BADDR(cp,addr);
   addr += cp->bsize;
-  if(cache_probe(cp, addr))
+  if(cache_probe(cp, addr) == 0)
     cache_access(cp, Read, addr, NULL, cp->bsize, 0, NULL, NULL, 1); 
 }
 
@@ -529,24 +529,22 @@ void open_ended_prefetcher(struct cache_t *cp, md_addr_t addr) {
 	; 
 }
 
-void init_entry(struct rpt_entry* entry){
+void init_entry(rpt_entry* entry){
   entry->tag = 0;
   entry->prev_addr = 0;
   entry->stride = 0; 
   entry->state = 3; //init state
 }
 
-void update_stride(struct rpt_entry* entry, md_addr_t new_stride, bool_t same_stride) {
+void update_stride(rpt_entry* entry, md_addr_t new_stride, bool_t same_stride) {
   assert(entry->state >= 1 && entry->state <= 4); 
   if(!same_stride){
     if(entry->state != 4)
       entry->stride = new_stride;
-      assert(0);
-      
   }
 }
 
-void update_state(struct rpt_entry* entry, bool_t same_stride) {
+void update_state(rpt_entry* entry, bool_t same_stride) {
     assert(entry->state >= 1 && entry->state <= 4); 
     // assert(entry->state != 1);
     if (same_stride) {
@@ -557,41 +555,36 @@ void update_state(struct rpt_entry* entry, bool_t same_stride) {
               entry->state++; 
         }
     } else {
-        if (entry->state != 1) {
-            entry->state--; 
-        }
+        if (entry->state != 1) 
+          entry->state--; 
+        
     }
 }
 
-void update_prevaddr(struct rpt_entry* entry, md_addr_t addr){
+void update_prevaddr(rpt_entry* entry, md_addr_t addr){
   entry->prev_addr = addr;
 }
 
-void update_tag(struct rpt_entry* entry, md_addr_t PC){
-  entry->tag = (PC >> TAG_SHIFT) & ((1 << TAG_SIZE) -1);
+void update_tag(rpt_entry* entry, md_addr_t pc){
+  entry->tag = pc;
 }
 
 int hash_rptEntry(md_addr_t pc, int entryLen){
-  return pc & (entryLen - 1);
-  // (pc >> 3) % entryLen;
+  return (pc >> 3) % entryLen;
 }
 
 /* Stride Prefetcher */
 void stride_prefetcher(struct cache_t *cp, md_addr_t addr) {
-  
   md_addr_t pc = get_PC();
-  
-  addr = CACHE_BADDR(cp,addr);
   int index = hash_rptEntry(pc, cp->prefetch_type);
   assert(index <= cp->prefetch_type && index >= 0);
   
-  struct rpt_entry* entry  = &(cp->rpt[index]);
+  rpt_entry* entry  = &(cp->rpt[index]);
   assert(entry != NULL);
 
   // tag miss
-  md_addr_t pcTag =(pc >> TAG_SHIFT) & ((1 << TAG_SIZE) -1);
-  if((entry->tag) != pcTag){
-    entry->tag = pcTag;
+  if((entry->tag) != pc){
+    entry->tag = pc;
     entry->prev_addr = addr;
     entry->stride = 0; 
     entry->state = 3; //init state
@@ -610,7 +603,7 @@ void stride_prefetcher(struct cache_t *cp, md_addr_t addr) {
   // Cache Access
   if(entry->state != 1){
     addr = CACHE_BADDR(cp, entry->prev_addr + entry->stride);
-    if(cache_probe(cp, addr))
+    if(cache_probe(cp, addr) == 0)
       cache_access(cp, Read, addr, NULL, cp->bsize, 0, NULL, NULL, 1); 
   }
 }

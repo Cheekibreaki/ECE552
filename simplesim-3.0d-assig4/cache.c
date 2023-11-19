@@ -314,6 +314,13 @@ cache_create(char *name,		/* name of the cache */
   cp->policy = policy;
   cp->hit_latency = hit_latency;
   cp->prefetch_type = prefetch_type;
+  /* ECE552 Assignment 4 - BEGIN CODE*/
+  cp->rpt = (struct rpt_entry*)malloc(prefetch_type * sizeof(struct rpt_entry));;
+  int idx = 0;
+  for(idx = 0; idx < prefetch_type; idx++){
+    init_entry(&(cp->rpt[idx]));
+  }
+  /* ECE552 Assignment 4 - END CODE*/
 
   /* miss/replacement functions */
   cp->blk_access_fn = blk_access_fn;
@@ -505,6 +512,10 @@ cache_reg_stats(struct cache_t *cp,	/* cache instance */
 
 }
 
+
+/* ECE552 Assignment 4 - BEGIN CODE*/
+#define TAG_SIZE 9
+#define TAG_SHIFT 5
 /* Next Line Prefetcher */
 void next_line_prefetcher(struct cache_t *cp, md_addr_t addr) {
   addr = CACHE_BADDR(cp,addr);
@@ -518,11 +529,92 @@ void open_ended_prefetcher(struct cache_t *cp, md_addr_t addr) {
 	; 
 }
 
-/* Stride Prefetcher */
-void stride_prefetcher(struct cache_t *cp, md_addr_t addr) {
-	; 
+void init_entry(struct rpt_entry* entry){
+  entry->tag = 0;
+  entry->prev_addr = 0;
+  entry->stride = 0; 
+  entry->state = 3; //init state
 }
 
+void update_stride(struct rpt_entry* entry, md_addr_t new_stride, bool_t same_stride) {
+  assert(entry->state >= 1 && entry->state <= 4); 
+  if(!same_stride){
+    if(entry->state != 4)
+      entry->stride = new_stride;
+      assert(0);
+      
+  }
+}
+
+void update_state(struct rpt_entry* entry, bool_t same_stride) {
+    assert(entry->state >= 1 && entry->state <= 4); 
+    // assert(entry->state != 1);
+    if (same_stride) {
+        if (entry->state != 4) {
+            if(entry->state == 2)
+              entry->state += 2;
+            else
+              entry->state++; 
+        }
+    } else {
+        if (entry->state != 1) {
+            entry->state--; 
+        }
+    }
+}
+
+void update_prevaddr(struct rpt_entry* entry, md_addr_t addr){
+  entry->prev_addr = addr;
+}
+
+void update_tag(struct rpt_entry* entry, md_addr_t PC){
+  entry->tag = (PC >> TAG_SHIFT) & ((1 << TAG_SIZE) -1);
+}
+
+int hash_rptEntry(md_addr_t pc, int entryLen){
+  return pc & (entryLen - 1);
+  // (pc >> 3) % entryLen;
+}
+
+/* Stride Prefetcher */
+void stride_prefetcher(struct cache_t *cp, md_addr_t addr) {
+  
+  md_addr_t pc = get_PC();
+  
+  addr = CACHE_BADDR(cp,addr);
+  int index = hash_rptEntry(pc, cp->prefetch_type);
+  assert(index <= cp->prefetch_type && index >= 0);
+  
+  struct rpt_entry* entry  = &(cp->rpt[index]);
+  assert(entry != NULL);
+
+  // tag miss
+  md_addr_t pcTag =(pc >> TAG_SHIFT) & ((1 << TAG_SIZE) -1);
+  if((entry->tag) != pcTag){
+    entry->tag = pcTag;
+    entry->prev_addr = addr;
+    entry->stride = 0; 
+    entry->state = 3; //init state
+    return;
+  }
+  // tag hit
+  else{
+    int new_stride = addr - entry->prev_addr;
+    bool_t same_stride = (new_stride == entry->stride);
+    update_stride(entry, new_stride, same_stride);
+    update_state(entry, same_stride);
+    update_tag(entry, pc);
+    update_prevaddr(entry, addr);
+  }
+  
+  // Cache Access
+  if(entry->state != 1){
+    addr = CACHE_BADDR(cp, entry->prev_addr + entry->stride);
+    if(cache_probe(cp, addr))
+      cache_access(cp, Read, addr, NULL, cp->bsize, 0, NULL, NULL, 1); 
+  }
+}
+/* ECE552 Assignment 4 - END CODE*/
 
 /* cache x might generate a prefetch after a regular cache access to address addr */
 void generate_prefetch(struct cache_t *cp, md_addr_t addr) {
@@ -546,8 +638,9 @@ void generate_prefetch(struct cache_t *cp, md_addr_t addr) {
 	}
 
 }
+/* ECE552 Assignment 4 - BEGIN CODE*/
 
-md_addr_t get_PC();
+//md_addr_t get_PC();
 
 /* print cache stats */
 void
@@ -598,7 +691,7 @@ cache_access(struct cache_t *cp,	/* cache to access */
   assert((nbytes & (nbytes-1)) == 0);
   assert((addr & (nbytes-1)) == 0);
   if ((nbytes & (nbytes-1)) != 0 || (addr & (nbytes-1)) != 0)
-    fatal("cache: access error: bad size or alignment, addr 0x%08x", addr);
+    fatal("cache: access error: bad size or alignment, ad x might generate a prefetch after a regular cache access to address addr */dr 0x%08x", addr);
 
   /* access must fit in cache block */
   /* FIXME:

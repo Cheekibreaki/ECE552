@@ -146,6 +146,16 @@ struct cache_set_t
 				   access to cache blocks */
 };
 
+/* ECE552 Assignment 4 - BEGIN CODE*/
+/*Reference Preitor Table Entry*/
+struct rpt_entry{
+  md_addr_t tag;
+  md_addr_t prev_addr;
+  md_addr_t stride;
+  int state; 
+};
+/* ECE552 Assignment 4 - END CODE*/
+
 /* cache definition */
 struct cache_t
 {
@@ -222,6 +232,11 @@ struct cache_t
   /* NOTE: this is a variable-size tail array, this must be the LAST field
      defined in this structure! */
   struct cache_set_t sets[1];	/* each entry is a set */
+
+
+  /* ECE552 Assignment 4 - BEGIN CODE*/
+  struct rpt_entry* rpt;
+  /* ECE552 Assignment 4 - EN CODE*/
 };
 
 /* create and initialize a general cache structure */

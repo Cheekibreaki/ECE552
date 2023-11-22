@@ -8,7 +8,11 @@ of SimpleScalar, LLC (info@simplescalar.com).
 sim: loading EIO file: /cad2/ece552f/benchmarks/gcc.eio
 sim: command line: ./sim-cache -redir:sim gcc_stride.simout -config cache-config/cache-lru-stride.cfg /cad2/ece552f/benchmarks/gcc.eio 
 
+<<<<<<< HEAD
 sim: simulation started @ Wed Nov 22 14:42:47 2023, options follow:
+=======
+sim: simulation started @ Sun Nov 19 16:10:49 2023, options follow:
+>>>>>>> 536cd385a57d5265af65b157e61d569ba3dd4dfa
 
 sim-cache: This simulator implements a functional cache simulator.  Cache
 statistics are generated for a user-selected cache and TLB configuration,

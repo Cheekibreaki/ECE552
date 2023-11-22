@@ -603,19 +603,69 @@ void stride_prefetcher(struct cache_t *cp, md_addr_t addr) {
       cache_access(cp, Read, addr, NULL, cp->bsize, 0, NULL, NULL, 1); 
   }
 }
-#define PREFETCH_SIZE 16
+
+#define PREFETCH_SIZE 1024
+#define INIT 0
+#define STEADY 1
+#define TRANSIENT -1
+#define NONPRED -2
+
+void init_entry_openEnd(rpt_entry* entry){
+  entry->tag = 0;
+  entry->prev_addr = 0;
+  entry->stride = 0; 
+  entry->state = INIT; //init state
+}
+
+void update_stride_openEnd(rpt_entry* entry, md_addr_t new_stride, bool_t same_stride) {
+  assert(entry->state >= 1 && entry->state <= 4); 
+  if(!same_stride){
+    if(entry->state != STEADY)
+      entry->stride = new_stride;
+  }
+}
+
+void update_state_openEnd(rpt_entry* entry, bool_t same_stride) {
+    // switch(entry->state){
+    //   case INIT:
+    //     break;
+    //   case STEADY:
+    //     break;
+    //   case TRANSIENT:
+    //     break;
+    //   case NONPRED:
+    //     break;
+    // }
+    if (same_stride) {
+        if (entry->state != 4) {
+            if(entry->state == 2)
+              entry->state += 2;
+            else
+              entry->state++; 
+        }
+    } else {
+        if (entry->state != 1) 
+          entry->state--; 
+        
+    }
+}
+
+int hash_rptEntry_openEnd(md_addr_t pc, int entryLen){
+  return (pc >> 3) % entryLen;
+}
+
 /* Open Ended Prefetcher */
 void open_ended_prefetcher(struct cache_t *cp, md_addr_t addr) {
 	if(rpt == NULL){
     rpt = (rpt_entry*)malloc(PREFETCH_SIZE * sizeof(rpt_entry));;
     int idx = 0;
     for(idx = 0; idx < PREFETCH_SIZE; idx++){
-      init_entry(&(rpt[idx]));
+      init_entry_openEnd(&(rpt[idx]));
     }
   }
 
   md_addr_t pc = get_PC();
-  int index = hash_rptEntry(pc, PREFETCH_SIZE);
+  int index = hash_rptEntry_openEnd(pc, PREFETCH_SIZE);
   assert(index <= PREFETCH_SIZE && index >= 0);
   
   rpt_entry* entry  = &(rpt[index]);
@@ -633,7 +683,7 @@ void open_ended_prefetcher(struct cache_t *cp, md_addr_t addr) {
   else{
     int new_stride = addr - entry->prev_addr;
     bool_t same_stride = (new_stride == entry->stride);
-    update_stride(entry, new_stride, same_stride);
+    update_stride_openEnd(entry, new_stride, same_stride);
     update_state(entry, same_stride);
     update_tag(entry, pc);
     update_prevaddr(entry, addr);

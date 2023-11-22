@@ -8,7 +8,7 @@ of SimpleScalar, LLC (info@simplescalar.com).
 sim: loading EIO file: /cad2/ece552f/benchmarks/compress.eio
 sim: command line: ./sim-cache -redir:sim compress_open.simout -config cache-config/cache-lru-open.cfg /cad2/ece552f/benchmarks/compress.eio 
 
-sim: simulation started @ Wed Nov 22 14:49:37 2023, options follow:
+sim: simulation started @ Wed Nov 22 15:03:13 2023, options follow:
 
 sim-cache: This simulator implements a functional cache simulator.  Cache
 statistics are generated for a user-selected cache and TLB configuration,
@@ -74,8 +74,8 @@ sim: ** starting functional simulation w/ caches **
 sim: ** simulation statistics **
 sim_num_insn               80432288 # total number of instructions executed
 sim_num_refs               28767230 # total number of loads and stores executed
-sim_elapsed_time                  2 # total simulation time in seconds
-sim_inst_rate          40216144.0000 # simulation speed (in insts/sec)
+sim_elapsed_time                  3 # total simulation time in seconds
+sim_inst_rate          26810762.6667 # simulation speed (in insts/sec)
 il1.accesses               80432288 # total number of accesses
 il1.hits                   80429660 # total number of hits
 il1.misses                     2628 # total number of misses
@@ -94,39 +94,39 @@ il1.prefetch_accesses             0 # total number of prefetch accesses
 il1.prefetch_hits                 0 # total number of prefetch hits
 il1.prefetch_misses               0 # total number of prefetch misses
 dl1.accesses               29063125 # total number of accesses
-dl1.hits                   27943099 # total number of hits
-dl1.misses                  1120026 # total number of misses
-dl1.replacements            1444690 # total number of replacements
-dl1.writebacks               595832 # total number of writebacks
+dl1.hits                   28009786 # total number of hits
+dl1.misses                  1053339 # total number of misses
+dl1.replacements            1211208 # total number of replacements
+dl1.writebacks               592065 # total number of writebacks
 dl1.invalidations                 0 # total number of invalidations
-dl1.miss_rate                0.0385 # miss rate (i.e., misses/ref)
-dl1.repl_rate                0.0497 # replacement rate (i.e., repls/ref)
-dl1.wb_rate                  0.0205 # writeback rate (i.e., wrbks/ref)
+dl1.miss_rate                0.0362 # miss rate (i.e., misses/ref)
+dl1.repl_rate                0.0417 # replacement rate (i.e., repls/ref)
+dl1.wb_rate                  0.0204 # writeback rate (i.e., wrbks/ref)
 dl1.inv_rate                 0.0000 # invalidation rate (i.e., invs/ref)
 dl1.read_accesses          17381698 # total number of read accesses
-dl1.read_hits              16479963 # total number of read hits
-dl1.read_misses              901735 # total number of read misses
-dl1.read_miss_rate           0.0519 # read miss rate
-dl1.prefetch_accesses        324920 # total number of prefetch accesses
+dl1.read_hits              16532549 # total number of read hits
+dl1.read_misses              849149 # total number of read misses
+dl1.read_miss_rate           0.0489 # read miss rate
+dl1.prefetch_accesses        158125 # total number of prefetch accesses
 dl1.prefetch_hits                 0 # total number of prefetch hits
-dl1.prefetch_misses          324920 # total number of prefetch misses
-ul2.accesses                1718486 # total number of accesses
-ul2.hits                    1619125 # total number of hits
-ul2.misses                    99361 # total number of misses
-ul2.replacements             247941 # total number of replacements
-ul2.writebacks               202167 # total number of writebacks
+dl1.prefetch_misses          158125 # total number of prefetch misses
+ul2.accesses                1648032 # total number of accesses
+ul2.hits                    1570993 # total number of hits
+ul2.misses                    77039 # total number of misses
+ul2.replacements             202180 # total number of replacements
+ul2.writebacks               184400 # total number of writebacks
 ul2.invalidations                 0 # total number of invalidations
-ul2.miss_rate                0.0578 # miss rate (i.e., misses/ref)
-ul2.repl_rate                0.1443 # replacement rate (i.e., repls/ref)
-ul2.wb_rate                  0.1176 # writeback rate (i.e., wrbks/ref)
+ul2.miss_rate                0.0467 # miss rate (i.e., misses/ref)
+ul2.repl_rate                0.1227 # replacement rate (i.e., repls/ref)
+ul2.wb_rate                  0.1119 # writeback rate (i.e., wrbks/ref)
 ul2.inv_rate                 0.0000 # invalidation rate (i.e., invs/ref)
-ul2.read_accesses           1122654 # total number of read accesses
-ul2.read_hits               1023439 # total number of read hits
-ul2.read_misses               99215 # total number of read misses
-ul2.read_miss_rate           0.0884 # read miss rate
-ul2.prefetch_accesses        324920 # total number of prefetch accesses
-ul2.prefetch_hits            172244 # total number of prefetch hits
-ul2.prefetch_misses          152676 # total number of prefetch misses
+ul2.read_accesses           1055967 # total number of read accesses
+ul2.read_hits                979074 # total number of read hits
+ul2.read_misses               76893 # total number of read misses
+ul2.read_miss_rate           0.0728 # read miss rate
+ul2.prefetch_accesses        158125 # total number of prefetch accesses
+ul2.prefetch_hits             28888 # total number of prefetch hits
+ul2.prefetch_misses          129237 # total number of prefetch misses
 ld_text_base             0x00400000 # program text (code) segment base
 ld_text_size                 103840 # program text (code) size in bytes
 ld_data_base             0x10000000 # program initialized data segment base

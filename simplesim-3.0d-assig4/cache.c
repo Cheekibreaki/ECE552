@@ -315,11 +315,11 @@ cache_create(char *name,		/* name of the cache */
   cp->hit_latency = hit_latency;
   cp->prefetch_type = prefetch_type;
   /* ECE552 Assignment 4 - BEGIN CODE*/
-  cp->rpt = (rpt_entry*)malloc(prefetch_type * sizeof(rpt_entry));;
-  int idx = 0;
-  for(idx = 0; idx < prefetch_type; idx++){
-    init_entry(&(cp->rpt[idx]));
-  }
+  // rpt = (rpt_entry*)malloc(prefetch_type * sizeof(rpt_entry));;
+  // int idx = 0;
+  // for(idx = 0; idx < prefetch_type; idx++){
+  //   init_entry(&(rpt[idx]));
+  // }
   /* ECE552 Assignment 4 - END CODE*/
 
   /* miss/replacement functions */
@@ -524,11 +524,6 @@ void next_line_prefetcher(struct cache_t *cp, md_addr_t addr) {
     cache_access(cp, Read, addr, NULL, cp->bsize, 0, NULL, NULL, 1); 
 }
 
-/* Open Ended Prefetcher */
-void open_ended_prefetcher(struct cache_t *cp, md_addr_t addr) {
-	; 
-}
-
 void init_entry(rpt_entry* entry){
   entry->tag = 0;
   entry->prev_addr = 0;
@@ -575,11 +570,19 @@ int hash_rptEntry(md_addr_t pc, int entryLen){
 
 /* Stride Prefetcher */
 void stride_prefetcher(struct cache_t *cp, md_addr_t addr) {
+  if(rpt == NULL){
+    rpt = (rpt_entry*)malloc(cp->prefetch_type * sizeof(rpt_entry));;
+    int idx = 0;
+    for(idx = 0; idx < cp->prefetch_type; idx++){
+      init_entry(&(rpt[idx]));
+    }
+  }
+
   md_addr_t pc = get_PC();
   int index = hash_rptEntry(pc, cp->prefetch_type);
   assert(index <= cp->prefetch_type && index >= 0);
   
-  rpt_entry* entry  = &(cp->rpt[index]);
+  rpt_entry* entry  = &(rpt[index]);
   assert(entry != NULL);
 
   // tag miss
@@ -606,6 +609,11 @@ void stride_prefetcher(struct cache_t *cp, md_addr_t addr) {
     if(cache_probe(cp, addr) == 0)
       cache_access(cp, Read, addr, NULL, cp->bsize, 0, NULL, NULL, 1); 
   }
+}
+#define PREFETCH_SIZE 16
+/* Open Ended Prefetcher */
+void open_ended_prefetcher(struct cache_t *cp, md_addr_t addr) {
+	;
 }
 /* ECE552 Assignment 4 - END CODE*/
 

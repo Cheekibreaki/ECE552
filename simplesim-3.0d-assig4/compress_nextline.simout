@@ -8,7 +8,7 @@ of SimpleScalar, LLC (info@simplescalar.com).
 sim: loading EIO file: /cad2/ece552f/benchmarks/compress.eio
 sim: command line: ./sim-cache -redir:sim compress_nextline.simout -config cache-config/cache-lru-nextline.cfg /cad2/ece552f/benchmarks/compress.eio 
 
-sim: simulation started @ Sun Nov 19 15:22:47 2023, options follow:
+sim: simulation started @ Wed Nov 22 14:19:49 2023, options follow:
 
 sim-cache: This simulator implements a functional cache simulator.  Cache
 statistics are generated for a user-selected cache and TLB configuration,
@@ -74,8 +74,8 @@ sim: ** starting functional simulation w/ caches **
 sim: ** simulation statistics **
 sim_num_insn               80432288 # total number of instructions executed
 sim_num_refs               28767230 # total number of loads and stores executed
-sim_elapsed_time                  3 # total simulation time in seconds
-sim_inst_rate          26810762.6667 # simulation speed (in insts/sec)
+sim_elapsed_time                  2 # total simulation time in seconds
+sim_inst_rate          40216144.0000 # simulation speed (in insts/sec)
 il1.accesses               80432288 # total number of accesses
 il1.hits                   80429660 # total number of hits
 il1.misses                     2628 # total number of misses

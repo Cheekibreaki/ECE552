@@ -611,7 +611,7 @@ void stride_prefetcher(struct cache_t *cp, md_addr_t addr) {
 #define STEADY2 6
 #define TRANSIENT 2
 #define NONPRED 1
-#define STEADYCOUNTERMAX 6
+#define STEADYCOUNTERMAX 3
 
 void init_entry_openEnd(rpt_entry* entry){
   entry->tag = 0;
@@ -641,47 +641,50 @@ void update_stateAndStride_openEnd(rpt_entry* entry, md_addr_t new_stride, bool_
       //steady = 1
       //steady1 = 2
       //steady2 = 3
+      // case STEADY:
+      //   assert(entry->steadyCounter>=0);
+      //   assert(entry->steadyCounter<=STEADYCOUNTERMAX);
+      //   if(same_stride){
+      //     if(entry->steadyCounter < STEADYCOUNTERMAX){
+      //       entry->steadyCounter++;
+      //     }
+      //   }
+      //   else{
+      //     if(entry->steadyCounter <= 1){
+      //       entry->state = INIT;
+      //     }
+      //     else{
+      //       entry->steadyCounter--;
+      //       assert(entry->steadyCounter>0);
+      //     }
+      //   }
+      //   break;
+      
       case STEADY:
-        assert(entry->steadyCounter>=0);
-        assert(entry->steadyCounter<=STEADYCOUNTERMAX);
         if(same_stride){
-          if(entry->steadyCounter < STEADYCOUNTERMAX){
-            entry->steadyCounter++;
-          }
+          entry->state = STEADY1;
+          entry->steadyCounter = 0;
         }
         else{
-          if(entry->steadyCounter <= 1){
-            entry->state = INIT;
-          }
-          else{
-            entry->steadyCounter--;
-            assert(entry->steadyCounter>0);
-          }
+          entry->state = INIT;
         }
         break;
-      
-      // case STEADY:
-      //   if(same_stride){
-      //     entry->state = STEADY1;
-      //   }
-      //   else{
-      //     entry->state = INIT;
-      //   }
-      //   break;
-      // case STEADY1:
-      //   if(same_stride){
-      //     entry->state = STEADY2;
-      //   }
-      //   else{
-      //     entry->state = STEADY1;
-      //   }
-      //   break;
-      // case STEADY2:
-      //   if(same_stride){ }
-      //   else{
-      //     entry->state = STEADY1;
-      //   }
-      //   break;
+       case STEADY1:
+        if(same_stride){
+          entry->state = STEADY2;
+        }
+        else{
+            entry->state = STEADY;
+        }
+        break;
+      case STEADY2:
+        if(same_stride){ }
+        else{
+          entry->state = STEADY2;
+        }
+        break;
+
+
       case TRANSIENT:
         if(same_stride){
           entry->state = STEADY;

@@ -605,10 +605,12 @@ void stride_prefetcher(struct cache_t *cp, md_addr_t addr) {
 }
 
 #define PREFETCH_SIZE 1024
-#define INIT 0
-#define STEADY 1
-#define TRANSIENT -1
-#define NONPRED -2
+#define INIT 3
+#define STEADY 4
+#define TRANSIENT 2
+#define TRANSIENT1 5
+#define TRANSIENT2 6
+#define NONPRED 1
 
 void init_entry_openEnd(rpt_entry* entry){
   entry->tag = 0;
@@ -617,36 +619,39 @@ void init_entry_openEnd(rpt_entry* entry){
   entry->state = INIT; //init state
 }
 
-void update_stride_openEnd(rpt_entry* entry, md_addr_t new_stride, bool_t same_stride) {
-  assert(entry->state >= 1 && entry->state <= 4); 
-  if(!same_stride){
-    if(entry->state != STEADY)
-      entry->stride = new_stride;
-  }
-}
-
-void update_state_openEnd(rpt_entry* entry, bool_t same_stride) {
-    // switch(entry->state){
-    //   case INIT:
-    //     break;
-    //   case STEADY:
-    //     break;
-    //   case TRANSIENT:
-    //     break;
-    //   case NONPRED:
-    //     break;
-    // }
-    if (same_stride) {
-        if (entry->state != 4) {
-            if(entry->state == 2)
-              entry->state += 2;
-            else
-              entry->state++; 
+void update_stateAndStride_openEnd(rpt_entry* entry, md_addr_t new_stride, bool_t same_stride) {
+    switch(entry->state){
+      case INIT:
+        if(same_stride){
+          entry->state = STEADY;
         }
-    } else {
-        if (entry->state != 1) 
-          entry->state--; 
-        
+        else{
+          entry->state = TRANSIENT;
+          entry->stride = new_stride;
+        }
+        break;
+      case STEADY:
+        if(!same_stride){
+          entry->state = INIT;
+        }
+        break;
+      case TRANSIENT:
+        if(same_stride){
+          entry->state = STEADY;
+        }
+        else{
+          entry->state = NONPRED;
+          entry->stride = new_stride;
+        }
+        break;
+      case NONPRED:
+        if(same_stride){
+          entry->state = TRANSIENT;
+        }
+        else{
+          entry->stride = new_stride;
+        }
+        break;
     }
 }
 
@@ -683,14 +688,15 @@ void open_ended_prefetcher(struct cache_t *cp, md_addr_t addr) {
   else{
     int new_stride = addr - entry->prev_addr;
     bool_t same_stride = (new_stride == entry->stride);
-    update_stride_openEnd(entry, new_stride, same_stride);
-    update_state(entry, same_stride);
+    update_stateAndStride_openEnd(entry, new_stride, same_stride);
+    // update_stride(entry, new_stride, same_stride);
+    // update_state(entry, same_stride);
     update_tag(entry, pc);
     update_prevaddr(entry, addr);
   }
   
   // Cache Access
-  if(entry->state != 1){
+  if(entry->state != NONPRED){
     addr = CACHE_BADDR(cp, entry->prev_addr + entry->stride);
     if(cache_probe(cp, addr) == 0)
       cache_access(cp, Read, addr, NULL, cp->bsize, 0, NULL, NULL, 1); 

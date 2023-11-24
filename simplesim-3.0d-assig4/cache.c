@@ -611,6 +611,7 @@ void stride_prefetcher(struct cache_t *cp, md_addr_t addr) {
 #define STEADY2 6
 #define TRANSIENT 2
 #define NONPRED 1
+#define STEADYCOUNTERMAX 6
 
 void init_entry_openEnd(rpt_entry* entry){
   entry->tag = 0;
@@ -624,39 +625,67 @@ void update_stateAndStride_openEnd(rpt_entry* entry, md_addr_t new_stride, bool_
       case INIT:
         if(same_stride){
           entry->state = STEADY;
+          entry->steadyCounter = 1;
         }
         else{
           entry->state = TRANSIENT;
           entry->stride = new_stride;
         }
         break;
+
+      //init = 3 
+      //steady = 4
+      //steady1 = 5
+      //steady2 = 6
+      
+      //steady = 1
+      //steady1 = 2
+      //steady2 = 3
       case STEADY:
+        assert(entry->steadyCounter>=0);
+        assert(entry->steadyCounter<=STEADYCOUNTERMAX);
         if(same_stride){
-          entry->state = STEADY1;
+          if(entry->steadyCounter < STEADYCOUNTERMAX){
+            entry->steadyCounter++;
+          }
         }
         else{
-          entry->state = INIT;
+          if(entry->steadyCounter <= 1){
+            entry->state = INIT;
+          }
+          else{
+            entry->steadyCounter--;
+            assert(entry->steadyCounter>0);
+          }
         }
         break;
-      case STEADY1:
-        if(same_stride){
-          entry->state = STEADY2;
-        }
-        else{
-          entry->state = STEADY1;
-        }
-        break;
-      case STEADY2:
-        if(same_stride){
-          // entry->state = STEADY2;
-        }
-        else{
-          entry->state = STEADY1;
-        }
-        break;
+      
+      // case STEADY:
+      //   if(same_stride){
+      //     entry->state = STEADY1;
+      //   }
+      //   else{
+      //     entry->state = INIT;
+      //   }
+      //   break;
+      // case STEADY1:
+      //   if(same_stride){
+      //     entry->state = STEADY2;
+      //   }
+      //   else{
+      //     entry->state = STEADY1;
+      //   }
+      //   break;
+      // case STEADY2:
+      //   if(same_stride){ }
+      //   else{
+      //     entry->state = STEADY1;
+      //   }
+      //   break;
       case TRANSIENT:
         if(same_stride){
           entry->state = STEADY;
+          entry->steadyCounter = 1;
         }
         else{
           entry->state = NONPRED;
@@ -701,6 +730,7 @@ void open_ended_prefetcher(struct cache_t *cp, md_addr_t addr) {
     entry->prev_addr = addr;
     entry->stride = 0; 
     entry->state = 3; //init state
+    entry->steadyCounter = 0;
     return;
   }
   // tag hit

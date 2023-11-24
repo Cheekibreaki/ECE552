@@ -152,7 +152,8 @@ typedef struct{
   md_addr_t tag;
   md_addr_t prev_addr;
   md_addr_t stride;
-  int state; 
+  int state;
+  int steadyCounter;
 }rpt_entry;
 
 static rpt_entry* rpt;

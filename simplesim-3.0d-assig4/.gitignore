@@ -7,3 +7,7 @@ sim-safe
 *.a
 sysprobe
 sim-eio
+*.simout
+mbq10
+mbq20
+mbq60

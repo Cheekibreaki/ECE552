@@ -607,9 +607,9 @@ void stride_prefetcher(struct cache_t *cp, md_addr_t addr) {
 #define PREFETCH_SIZE 1024
 #define INIT 3
 #define STEADY 4
+#define STEADY1 5
+#define STEADY2 6
 #define TRANSIENT 2
-#define TRANSIENT1 5
-#define TRANSIENT2 6
 #define NONPRED 1
 
 void init_entry_openEnd(rpt_entry* entry){
@@ -631,8 +631,27 @@ void update_stateAndStride_openEnd(rpt_entry* entry, md_addr_t new_stride, bool_
         }
         break;
       case STEADY:
-        if(!same_stride){
+        if(same_stride){
+          entry->state = STEADY1;
+        }
+        else{
           entry->state = INIT;
+        }
+        break;
+      case STEADY1:
+        if(same_stride){
+          entry->state = STEADY2;
+        }
+        else{
+          entry->state = STEADY1;
+        }
+        break;
+      case STEADY2:
+        if(same_stride){
+          // entry->state = STEADY2;
+        }
+        else{
+          entry->state = STEADY1;
         }
         break;
       case TRANSIENT:

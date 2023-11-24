@@ -1,13 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 int main() {
-    int array[64000];
-    register int i = 0, idx = 0;
+    int array[512000];
+    int i = 0, idx = 0;
     while(1){
-        for (i = 0; i < 64000; i=i+64) {
-            array[i]++;
+        for (i = 0; i < 512000; i=i+512) {
+            array[i] = i;
         }
-        if(idx > 100000) break;
+        if(idx > 10000) break;
         idx++;
     }
 }

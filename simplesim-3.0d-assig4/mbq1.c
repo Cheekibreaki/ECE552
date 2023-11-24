@@ -1,15 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
-#define arraySize 1000000
-#define whileItr 16384
 int main() {
-    int array[arraySize];
-    int i = 0, idx = 0;
-    while(true){
-        for (i = 0; i < arraySize; i=i+64) {
-            array[i] = 114514;
+    int array[64000];
+    register int i = 0, idx = 0;
+    while(1){
+        for (i = 0; i < 64000; i=i+64) {
+            array[i]++;
         }
-        if(idx > whileItr) break;
+        if(idx > 100000) break;
         idx++;
     }
 }

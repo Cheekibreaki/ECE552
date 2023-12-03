@@ -617,21 +617,19 @@ machine(L1Cache, "MSI L1 Cache")
   // =============================================================================
 
   transition(I, {Load, Ifetch}, IS_D) {
-    // send getS to Dir/IS_D
     p_profileMiss;
     i_allocateL1CacheBlock;
     v_allocateTBE;
-    m_popMandatoryQueue;
     as_issueGetS;
+    m_popMandatoryQueue;
   }
 
   transition(I, Store, IM_AD) {
-    // send getM to Dir/IM_AD
     p_profileMiss;
     i_allocateL1CacheBlock;
     v_allocateTBE;
-    m_popMandatoryQueue;
     am_issueGetM;
+    m_popMandatoryQueue;
   }
   
 
@@ -692,7 +690,6 @@ machine(L1Cache, "MSI L1 Cache")
 
   transition(IM_A, Inv_Ack_all, M) {
     q_updateAckCount;
-    u_writeDataToCache;
     w_deallocateTBE;
     sx_store_hit;
     n_popResponseQueue;
@@ -708,11 +705,11 @@ machine(L1Cache, "MSI L1 Cache")
   }
 
   transition(S, Store, SM_AD) {
+    p_profileMiss;
     v_allocateTBE;
     x_copyDataFromCacheToTBE;
     am_issueGetM;
     m_popMandatoryQueue;
-    p_profileMiss;
   }
 
   transition(S, Replacement, SI_A) {
@@ -783,9 +780,8 @@ machine(L1Cache, "MSI L1 Cache")
   }
 
   transition(SM_A, Inv_Ack_all, M) {
-    u_writeDataToCache;
-    w_deallocateTBE;
     sx_store_hit;
+    w_deallocateTBE;
     n_popResponseQueue;
   }
 

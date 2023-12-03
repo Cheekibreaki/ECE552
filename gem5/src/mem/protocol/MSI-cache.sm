@@ -646,8 +646,8 @@ machine(L1Cache, "MSI L1 Cache")
   transition(IS_D, {Data_from_Dir_No_Acks, Data_from_Owner}, S) {
     w_deallocateTBE;
     u_writeDataToCache;
-    n_popResponseQueue;
     rx_load_hit;
+    n_popResponseQueue;
   }
 
   // =============================================================================
@@ -667,8 +667,8 @@ machine(L1Cache, "MSI L1 Cache")
   transition(IM_AD, {Data_from_Dir_No_Acks, Data_from_Dir_Ack_Cnt_Last, Data_from_Owner}, M) {
     u_writeDataToCache;
     w_deallocateTBE;
-    n_popResponseQueue;
     sx_store_hit;
+    n_popResponseQueue;
   }
 
   transition(IM_AD, Inv_Ack) {
@@ -693,8 +693,8 @@ machine(L1Cache, "MSI L1 Cache")
   transition(IM_A, Inv_Ack_all, M) {
     u_writeDataToCache;
     w_deallocateTBE;
-    n_popResponseQueue;
     sx_store_hit;
+    n_popResponseQueue;
   }
 
   // =============================================================================
@@ -703,8 +703,8 @@ machine(L1Cache, "MSI L1 Cache")
 
 
   transition(S, Load) {
-    m_popMandatoryQueue;
     r_load_hit;
+    m_popMandatoryQueue;
   }
 
   transition(S, Store, SM_AD) {
@@ -732,8 +732,13 @@ machine(L1Cache, "MSI L1 Cache")
   // SM_AD
   // =============================================================================  
 
-  transition(SM_AD, {Load, Ifetch, Store, Replacement, Fwd_GetS, Fwd_GetM}) {
+  transition(SM_AD, {Store, Replacement, Fwd_GetS, Fwd_GetM}) {
     z_stall;
+  }
+
+  transition(SM_AD, {Load, Ifetch}){
+    r_load_hit; 
+    m_popMandatoryQueue;
   }
 
   transition(SM_AD, Data_from_Dir_Ack_Cnt, SM_A) {
@@ -745,8 +750,8 @@ machine(L1Cache, "MSI L1 Cache")
   transition(SM_AD, {Data_from_Dir_No_Acks, Data_from_Dir_Ack_Cnt_Last}, M) {
     u_writeDataToCache;
     w_deallocateTBE;
-    n_popResponseQueue;
     sx_store_hit;
+    n_popResponseQueue;
   }
 
   transition(SM_AD, Inv_Ack) {
@@ -776,8 +781,8 @@ machine(L1Cache, "MSI L1 Cache")
   transition(SM_A, Inv_Ack_all, M) {
     u_writeDataToCache;
     w_deallocateTBE;
-    n_popResponseQueue;
     sx_store_hit;
+    n_popResponseQueue;
   }
 
   // =============================================================================
@@ -786,13 +791,13 @@ machine(L1Cache, "MSI L1 Cache")
 
 
   transition(M, Load) {
-    m_popMandatoryQueue;
     r_load_hit;
+    m_popMandatoryQueue;
   }
 
   transition(M, Store) {
-    m_popMandatoryQueue;
     s_store_hit;
+    m_popMandatoryQueue;
   }
 
   transition(M, Replacement, MI_A) {

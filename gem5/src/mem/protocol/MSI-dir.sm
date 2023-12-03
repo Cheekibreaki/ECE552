@@ -624,11 +624,11 @@ getDirectoryEntry(address).Sharers);
   // =============================================================================
 
   transition(M, GETS, MS_cD) {
-    aos_addOwnertoSharers;
-    ars2_addRequestorToSharers;
-    c_clearOwner;
     vv_allocateTBEFromRequestNet;
     f_forwardRequest;
+    ars2_addRequestorToSharers;
+    aos_addOwnertoSharers;
+    c_clearOwner;
     i_popIncomingRequestQueue;
   }
 
